@@ -3,9 +3,26 @@ name: screening-github-cloud
 description: Pre-clone security screening for GitHub repositories in sandboxed environments. Supports GitHub Codespaces (cloud) and Docker/OrbStack (local sandbox). Activates when user asks to "screen repo", "is this repo safe", "check before cloning", or mentions security screening.
 license: MIT
 metadata:
-  version: "4.0.0"
-  environment: codespaces, docker, orbstack
+  version: "4.1.0"
+  author: gradigit
   updated: "2026-01-29"
+  environment: codespaces, docker, orbstack
+  tags:
+    - security
+    - github
+    - screening
+    - sandbox
+    - malware-detection
+    - supply-chain
+    - dynamic-analysis
+  triggers:
+    - "screen repo"
+    - "screen this repo"
+    - "is this repo safe"
+    - "check before cloning"
+    - "security screening"
+    - "should I clone this"
+    - "is it safe to install"
 ---
 
 # Sandboxed GitHub Screener
@@ -101,21 +118,21 @@ exit
 
 ## Screening Workflow
 
-**Create a task list at the start of every screening session:**
+**Use TaskCreate to track progress through these steps:**
 
-```
-- [ ] 1. Confirm running in fresh sandbox (Codespaces or Docker)
-- [ ] 2. Clone target repo to ./target-repo
-- [ ] 3. Get repo metadata (stars, age, contributors)
-- [ ] 4. Run security scanners (Trivy, Gitleaks)
-- [ ] 5. Check GitHub Actions (actionlint, zizmor)
-- [ ] 6. Static analysis for malicious patterns
-- [ ] 7. Dynamic analysis: run npm install / pip install
-- [ ] 8. Observe behavior (processes, network attempts)
-- [ ] 9. Run dependency audits (npm audit, pip-audit)
-- [ ] 10. Generate screening report
-- [ ] 11. Destroy sandbox
-```
+1. Confirm running in fresh sandbox (Codespaces or Docker)
+2. Clone target repo to ./target-repo
+3. Get repo metadata (stars, age, contributors)
+4. Run security scanners (Trivy, Gitleaks)
+5. Check GitHub Actions (actionlint, zizmor)
+6. Static analysis for malicious patterns
+7. Dynamic analysis: run npm install / pip install
+8. Observe behavior (processes, network attempts)
+9. Run dependency audits (npm audit, pip-audit)
+10. Generate screening report
+11. Destroy sandbox
+
+Mark each task `in_progress` when starting, `completed` when done.
 
 ---
 
@@ -408,6 +425,40 @@ Even if a malicious script steals your Claude session token:
 
 ---
 
+## Risk Score Calculation
+
+Start at 100, subtract based on findings:
+
+| Finding Type | Impact |
+|--------------|--------|
+| CRITICAL (malware, exfil, backdoor) | -40 |
+| HIGH (injection, typosquatting, CVE) | -25 |
+| MEDIUM (unpinned actions, outdated deps) | -10 |
+| LOW (missing license, minor issues) | -5 |
+| Clean tool scan | +0 (no bonus) |
+
+**Confidence** is based on scan completeness:
+- All tools ran successfully: 90-95%
+- Some tools failed: 70-85%
+- Only static analysis: 60-75%
+
+---
+
+## Tool Versions
+
+Tested with these versions (tool APIs may change):
+
+| Tool | Version | Install |
+|------|---------|---------|
+| Trivy | 0.50+ | `curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \| sh` |
+| Gitleaks | 8.x | `apt install gitleaks` or `go install github.com/gitleaks/gitleaks/v8@latest` |
+| actionlint | 1.7+ | `go install github.com/rhysd/actionlint/cmd/actionlint@latest` |
+| zizmor | 0.x | `pip install zizmor` |
+
+If tools fail to install, fall back to manual pattern matching. See [examples.md](examples.md) for failure recovery.
+
+---
+
 ## Examples
 
 See [examples.md](examples.md) for complete screening walkthroughs.
@@ -420,14 +471,14 @@ See [heuristics.md](heuristics.md) for full pattern library.
 
 ## Self-Evolution
 
-Update when:
-1. **On miss**: New threat pattern discovered
-2. **On false positive**: Refine detection
-3. **On tool update**: New security scanner available
+This skill improves over time. Update when:
 
-**Changelog:**
-- v4.0.0: Major rewrite - dynamic analysis, security tools, network stays connected
-- v3.1.0: Replaced Claude.ai web with Docker/OrbStack local sandbox option
-- v3.0.0: Added GitHub Codespaces support
-- v2.0.0: Reframed as screening tool (not audit), added task list workflow
-- v1.0.0: Initial version
+1. **On miss**: New threat pattern discovered → add to heuristics.md
+2. **On false positive**: Pattern too broad → refine detection rules
+3. **On novel attack**: New attack class emerges → add detection section
+4. **On tool update**: New security scanner available → integrate
+5. **On CVE**: Major supply chain incident → add to known threats
+
+**The skill's limitations (novel attacks, logic bombs, sophisticated obfuscation) are addressed through continuous evolution.** Each missed threat becomes a new detection pattern.
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.

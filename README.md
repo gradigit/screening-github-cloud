@@ -117,6 +117,8 @@ screening-github-cloud/
 ├── SKILL.md        # Core instructions (for Claude)
 ├── heuristics.md   # Detection patterns
 ├── examples.md     # Screening walkthroughs
+├── CHANGELOG.md    # Version history
+├── LICENSE         # MIT license
 └── README.md       # This file (for humans)
 ```
 

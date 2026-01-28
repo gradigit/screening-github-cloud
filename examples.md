@@ -9,6 +9,7 @@ Complete walkthroughs for sandboxed security screening with dynamic analysis.
 - [Example 3: Prompt Injection Attempt](#example-3-prompt-injection-attempt)
 - [Example 4: GitHub Actions Vulnerability](#example-4-github-actions-vulnerability)
 - [Example 5: Supply Chain Attack Detection](#example-5-supply-chain-attack-detection)
+- [Example 6: Tool Installation Failure Recovery](#example-6-tool-installation-failure-recovery)
 - [Report Template](#report-template)
 
 ---
@@ -125,7 +126,7 @@ no unexpected network activity, no files created outside project.
 Safe to clone to your local machine.
 
 ---
-*Sandboxed screening via screening-github-cloud v4.0.0*
+*Sandboxed screening via screening-github-cloud v4.1.0*
 ```
 
 ---
@@ -256,7 +257,7 @@ HIGH: Hardcoded credential detected
 3. Report to npm security team
 
 ---
-*Sandboxed screening via screening-github-cloud v4.0.0*
+*Sandboxed screening via screening-github-cloud v4.1.0*
 ```
 
 ---
@@ -345,7 +346,7 @@ No issues found.
 `npm install` completed normally, no suspicious behavior.
 
 ---
-*Sandboxed screening via screening-github-cloud v4.0.0*
+*Sandboxed screening via screening-github-cloud v4.1.0*
 ```
 
 ---
@@ -453,7 +454,7 @@ None in application code.
 Application code: `npm install` normal, no issues.
 
 ---
-*Sandboxed screening via screening-github-cloud v4.0.0*
+*Sandboxed screening via screening-github-cloud v4.1.0*
 ```
 
 ---
@@ -558,7 +559,122 @@ None.
 3. Check if this was intentional or a typo
 
 ---
-*Sandboxed screening via screening-github-cloud v4.0.0*
+*Sandboxed screening via screening-github-cloud v4.1.0*
+```
+
+---
+
+## Example 6: Tool Installation Failure Recovery
+
+**Scenario:** Trivy fails to install in Codespace due to network issues.
+
+### The Failure
+
+```bash
+$ curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+curl: (6) Could not resolve host: raw.githubusercontent.com
+
+# Trivy unavailable
+```
+
+### Fallback Approach
+
+When tools fail, fall back to manual pattern matching:
+
+```bash
+# Instead of Trivy for secrets, use grep patterns
+grep -rE "AKIA[0-9A-Z]{16}" ./target-repo
+grep -rE "ghp_[A-Za-z0-9_]{36,}" ./target-repo
+grep -rE "sk-[A-Za-z0-9]{48}" ./target-repo
+
+# Instead of Trivy for CVEs, use npm audit (usually works)
+cd ./target-repo && npm audit
+
+# Check for postinstall scripts manually
+cat package.json | grep -A5 '"scripts"'
+```
+
+### GitHub Actions Without actionlint/zizmor
+
+```bash
+# Manual checks for dangerous patterns
+grep -r "pull_request_target" .github/workflows/
+grep -r '\${{.*github\.event' .github/workflows/
+grep -rE "uses:.*@(main|master|v[0-9]+)$" .github/workflows/
+```
+
+### Dynamic Analysis Still Works
+
+Even without scanning tools, dynamic analysis works:
+
+```bash
+ps aux > /tmp/before.txt
+npm install 2>&1 | tee /tmp/install.log
+ps aux > /tmp/after.txt
+diff /tmp/before.txt /tmp/after.txt
+
+# Check for suspicious activity
+grep -E "(curl|wget|POST|http)" /tmp/install.log
+find ~ -newer /tmp/before.txt -type f
+```
+
+### Report With Reduced Confidence
+
+```markdown
+# Security Screening: example/repo
+
+**Date:** 2026-01-29
+**Environment:** Codespaces
+**Type:** Sandboxed screening (degraded - some tools unavailable)
+
+## Verdict: CAUTION
+
+**Risk Score:** 70/100 | **Confidence:** 65%
+
+## Should You Clone This?
+
+**Probably safe, but confidence is reduced** due to tool failures.
+Manual pattern matching found no issues, but automated scanning was incomplete.
+
+## Findings
+
+### Red Flags (0)
+None found via manual checks.
+
+### Yellow Flags (1)
+
+1. **Incomplete Scan** - Tool Failure
+   - Trivy failed to install (network issue)
+   - actionlint/zizmor unavailable
+   - Relied on manual pattern matching
+
+### Notes
+- npm audit: 0 vulnerabilities
+- Dynamic analysis: npm install normal
+- Manual grep: no secret patterns found
+
+## Tool Results
+
+### Trivy
+FAILED TO INSTALL - used manual grep patterns instead
+
+### Gitleaks
+FAILED TO INSTALL - used manual grep patterns instead
+
+### npm audit
+0 vulnerabilities
+
+### Dynamic Analysis
+Normal behavior observed during npm install.
+
+## Next Steps
+
+1. Clone is likely safe, but consider re-screening with full tools later
+2. Or manually review postinstall scripts before running npm install locally
+
+---
+*Sandboxed screening via screening-github-cloud v4.1.0*
+*Note: Reduced confidence due to tool installation failures.*
 ```
 
 ---
@@ -615,6 +731,6 @@ Use this structure for all screenings:
 [What to do based on verdict]
 
 ---
-*Sandboxed screening via screening-github-cloud v4.0.0*
+*Sandboxed screening via screening-github-cloud v4.1.0*
 *Dynamic analysis performed in disposable environment.*
 ```
