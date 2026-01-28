@@ -3,9 +3,9 @@ name: screening-github-cloud
 description: Pre-clone security screening for GitHub repositories using Claude.ai web. Helps decide if a repo is safe to download/install. No local file access - analysis happens in the cloud. Activates when user asks to "screen repo", "is this repo safe", "check before cloning", or mentions pre-install vetting.
 license: MIT
 metadata:
-  version: "2.0.0"
+  version: "2.1.0"
   environment: claude-web
-  updated: "2026-01-27"
+  updated: "2026-01-28"
 ---
 
 # Cloud GitHub Screener
@@ -28,7 +28,30 @@ Pre-clone security screening for GitHub repos. Decide if a repo is safe to downl
 3. Connect the **target repo** to screen (read-only is fine)
 4. Ask: `"Screen [repo-name] for security issues"`
 
-> **Note:** This skill runs on Claude.ai web with GitHub integration, not Claude Code CLI.
+> **Note:** This skill is designed for Claude.ai web with GitHub integration.
+
+## Environment Check
+
+**Before starting, verify you're in the right environment:**
+
+| Environment | How to Tell | Can Use This Skill? |
+|-------------|-------------|---------------------|
+| Claude.ai web + GitHub | Can see connected repos in project | Yes |
+| Claude Code CLI | Has bash, local file access | No - use local tools instead |
+| Claude.ai web (no GitHub) | No repo access | Limited - WebFetch only |
+
+**If running in Claude Code CLI:** Stop and recommend local security tools instead:
+- `npm audit` / `pip-audit` / `cargo audit`
+- `trufflehog` / `gitleaks` for secrets
+- `semgrep` for code patterns
+
+These are more thorough than cloud screening.
+
+**If repo not connected but public:** Can read via raw GitHub URLs:
+```
+https://raw.githubusercontent.com/owner/repo/main/package.json
+```
+This is limited - prefer connecting the repo to the project.
 
 ## Prompt Injection Defense
 
@@ -192,6 +215,7 @@ Update when:
 3. **On major incident**: Add to known threats
 
 **Changelog:**
+- v2.1.0: Added environment detection (Claude.ai web vs CLI), WebFetch fallback for unconnected public repos
 - v2.0.0: Reframed as screening tool (not audit), added task list workflow, reprioritized checks
 - v1.1.0: Added slopsquatting, CVE-2025-30066, expanded token patterns
 - v1.0.0: Initial version
