@@ -184,6 +184,39 @@ Check for:
 - Non-official registry URLs
 - Lockfile/manifest mismatch
 
+### Deep Investigation Triggers
+
+**Automatically investigate a dependency when ANY of:**
+
+| Trigger | How to Check |
+|---------|--------------|
+| Typosquatting candidate | Levenshtein distance ≤ 2 from popular package |
+| Low downloads | `npm view <pkg> | grep weekly` < 1000 |
+| New package | `npm view <pkg> time.created` < 90 days ago |
+| No source link | `npm view <pkg> repository` is empty |
+| Has install scripts | `npm view <pkg> scripts.postinstall` exists |
+| Single maintainer | `npm view <pkg> maintainers` has 1 entry |
+
+**For Python:**
+```bash
+# Check package info
+pip index versions <pkg>  # See if it exists
+pip show <pkg>  # After install, check metadata
+```
+
+**npm quick check command:**
+```bash
+npm view <suspicious-pkg> --json | jq '{
+  name: .name,
+  version: .version,
+  created: .time.created,
+  downloads: "check npmjs.com",
+  repository: .repository,
+  scripts: .scripts,
+  maintainers: .maintainers
+}'
+```
+
 ### Slopsquatting (AI-Hallucinated Packages)
 
 **2025+ attack vector.** LLMs hallucinate fake package names that attackers register.

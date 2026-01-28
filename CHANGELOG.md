@@ -2,6 +2,23 @@
 
 All notable changes to this skill are documented here.
 
+## [4.2.0] - 2026-01-29
+
+### Added
+- **Deep Dependency Investigation** section
+  - Install suspicious dependencies in isolation
+  - Observe behavior during installation
+  - Inspect installed package source code
+  - Compare published package vs source repo (supply chain injection detection)
+  - Python package investigation workflow
+  - Documentation template for investigated dependencies
+- New workflow step 10: Deep dive suspicious dependencies
+- Deep Dependency Investigation section in report output format
+
+### Changed
+- Workflow now has 12 steps (was 11)
+- Version bump to 4.2.0
+
 ## [4.1.0] - 2026-01-29
 
 ### Added

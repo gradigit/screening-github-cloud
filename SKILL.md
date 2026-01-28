@@ -3,7 +3,7 @@ name: screening-github-cloud
 description: Pre-clone security screening for GitHub repositories in sandboxed environments. Supports GitHub Codespaces (cloud) and Docker/OrbStack (local sandbox). Activates when user asks to "screen repo", "is this repo safe", "check before cloning", or mentions security screening.
 license: MIT
 metadata:
-  version: "4.1.0"
+  version: "4.2.0"
   author: gradigit
   updated: "2026-01-29"
   environment: codespaces, docker, orbstack
@@ -129,8 +129,9 @@ exit
 7. Dynamic analysis: run npm install / pip install
 8. Observe behavior (processes, network attempts)
 9. Run dependency audits (npm audit, pip-audit)
-10. Generate screening report
-11. Destroy sandbox
+10. **Deep dive suspicious dependencies** (install, inspect, compare)
+11. Generate screening report
+12. Destroy sandbox
 
 Mark each task `in_progress` when starting, `completed` when done.
 
@@ -221,6 +222,141 @@ tcpdump -r /tmp/capture.pcap -n | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | so
 | Reads ~/.ssh, ~/.aws, ~/.config | CRITICAL | Credential theft attempt |
 | Creates files outside project | MEDIUM | Persistence attempt |
 | Long-running background process | HIGH | Crypto miner or backdoor |
+
+---
+
+## Deep Dependency Investigation
+
+When a dependency is flagged as suspicious (unknown, typosquatting, new, low downloads), **install and investigate it directly** rather than just flagging it.
+
+### When to Deep Dive
+
+Trigger deep investigation when dependency has ANY of:
+- Name similar to popular package (typosquatting candidate)
+- < 1000 weekly downloads
+- Published < 90 days ago
+- No GitHub/source link
+- Has postinstall/preinstall scripts
+- Not in your known-good list
+
+### Investigation Process
+
+```bash
+# 1. Create isolated directory for the suspicious package
+mkdir -p /tmp/dep-investigation
+cd /tmp/dep-investigation
+
+# 2. Capture baseline
+ps aux > /tmp/dep-before.txt
+
+# 3. Install ONLY the suspicious package
+npm init -y
+npm install <suspicious-package> 2>&1 | tee /tmp/dep-install.log
+
+# 4. Check what happened during install
+ps aux > /tmp/dep-after.txt
+diff /tmp/dep-before.txt /tmp/dep-after.txt
+grep -E "(curl|wget|nc|http|POST|GET)" /tmp/dep-install.log
+find /tmp -newer /tmp/dep-before.txt -type f 2>/dev/null
+find ~ -newer /tmp/dep-before.txt -type f 2>/dev/null
+```
+
+### Inspect Installed Package Code
+
+```bash
+# 5. Read the actual installed code
+cd node_modules/<suspicious-package>
+
+# Check package.json for scripts
+cat package.json | jq '.scripts'
+
+# Look for obfuscation
+grep -r "eval(" . --include="*.js"
+grep -r "Function(" . --include="*.js"
+grep -r "\\\\x[0-9a-f]" . --include="*.js"
+
+# Look for exfiltration
+grep -r "process.env" . --include="*.js"
+grep -r "fetch\|axios\|request\|http" . --include="*.js"
+
+# Check for minified/obfuscated files that shouldn't be
+find . -name "*.js" -exec sh -c 'wc -l "$1" | grep -q "^1 " && echo "Single-line (possibly obfuscated): $1"' _ {} \;
+
+# Run Trivy on just this package
+trivy fs . --scanners vuln,secret
+```
+
+### Compare Published vs Source (Supply Chain Injection)
+
+If package has a GitHub link:
+
+```bash
+# 6. Clone the source repo
+git clone <package-github-url> /tmp/dep-source
+
+# 7. Compare published package with source
+diff -r node_modules/<package> /tmp/dep-source/src 2>/dev/null | head -50
+
+# Key differences to flag:
+# - Extra files in npm that aren't in source
+# - Postinstall scripts in npm but not in source
+# - Obfuscated code in npm but clean code in source
+```
+
+### Python Packages
+
+```bash
+# Install in isolation
+mkdir -p /tmp/pip-investigation
+cd /tmp/pip-investigation
+python -m venv venv
+source venv/bin/activate
+
+pip install <suspicious-package> 2>&1 | tee /tmp/pip-install.log
+
+# Find installed location
+pip show <suspicious-package> | grep Location
+
+# Inspect the code
+cd $(pip show <suspicious-package> | grep Location | cut -d' ' -f2)/<package>
+grep -r "exec(" . --include="*.py"
+grep -r "eval(" . --include="*.py"
+grep -r "os.environ" . --include="*.py"
+grep -r "subprocess" . --include="*.py"
+```
+
+### What to Document
+
+For each investigated dependency, record:
+
+| Field | Value |
+|-------|-------|
+| Package name | |
+| Version installed | |
+| Weekly downloads | (from `npm view <pkg>` or pypi API) |
+| Published date | |
+| Has postinstall | Yes/No |
+| Install behavior | Normal / Suspicious (detail) |
+| Code inspection | Clean / Obfuscated / Malicious |
+| Source comparison | Matches / Differs / No source |
+| **Verdict** | SAFE / SUSPICIOUS / MALICIOUS |
+
+### Add to Screening Report
+
+```markdown
+## Deep Dependency Investigation
+
+### Investigated: `suspicious-package@1.0.0`
+
+| Check | Result |
+|-------|--------|
+| Install behavior | Normal - no network calls, no file writes |
+| postinstall script | None |
+| Code inspection | Clean, readable, no obfuscation |
+| npm vs source | Matches GitHub repo |
+
+**Verdict:** SAFE - package is legitimate despite low download count
+```
 
 ---
 
@@ -349,12 +485,15 @@ Save to `SCREENING-REPORT.md`:
 ### Dynamic Analysis
 [What happened during npm install - any suspicious behavior?]
 
+### Deep Dependency Investigation
+[If any dependencies were flagged and investigated, document findings here]
+
 ## Next Steps
 
 [What to do based on verdict]
 
 ---
-*Sandboxed screening via screening-github-cloud v4.0.0*
+*Sandboxed screening via screening-github-cloud v4.2.0*
 *Dynamic analysis performed in disposable environment.*
 ```
 
