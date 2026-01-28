@@ -1,14 +1,18 @@
 # Cloud GitHub Screener
 
-Pre-clone security screening for GitHub repos. **Decide if a repo is safe to download before it touches your system.**
+Pre-clone security screening for GitHub repos. **Decide if a repo is safe to download before it touches your local system.**
 
 ## What This Is
 
-A first-pass screening tool that runs entirely in Claude's cloud environment. Use it to answer: "Should I clone/install this repo?"
+A first-pass screening tool that runs in sandboxed cloud environments:
+- **GitHub Codespaces** (recommended) - Full screening with local tools
+- **Claude.ai web** - Pattern-based screening only
 
-**This is NOT a comprehensive security audit.** After screening, you should still run local tools (`npm audit`, etc.) and review code yourself.
+Use it to answer: "Should I clone/install this repo?"
 
-## Why Cloud-Only?
+**This is NOT a comprehensive security audit.** But it catches the obvious red flags before you expose your system.
+
+## Why Sandboxed?
 
 When evaluating untrusted repos, you face risks:
 
@@ -16,14 +20,45 @@ When evaluating untrusted repos, you face risks:
 - **Supply chain attacks** - Typosquatted dependencies
 - **Prompt injection** - Malicious content trying to manipulate AI
 
-This skill keeps everything sandboxed. Review the screening report *before* the repo touches your machine.
+This skill keeps everything sandboxed. The suspicious repo runs on GitHub's servers (Codespaces) or is analyzed without cloning (Claude.ai web). Review the screening report *before* the repo touches your machine.
 
 ## Setup
 
-1. **Fork** this repo to your GitHub account
-2. **Connect** your fork to a [Claude.ai](https://claude.ai) project
-3. **Connect** the target repo to screen (read-only is fine)
-4. **Ask Claude**: `"Screen [repo-name] for security issues"`
+### Option 1: GitHub Codespaces (Recommended)
+
+```bash
+# From your local terminal:
+
+# 1. Create a sandboxed codespace
+gh codespace create --repo YOUR-USERNAME/any-repo -m basicLinux32gb
+
+# 2. SSH into it
+gh codespace ssh
+
+# 3. Install Claude Code CLI (if not present)
+npm install -g @anthropic-ai/claude-code
+
+# 4. Ask Claude to screen a repo
+claude "Screen https://github.com/suspicious/repo for security issues"
+
+# 5. View the report
+glow SCREENING-REPORT.md
+
+# 6. When done, exit and delete
+exit
+gh codespace delete
+```
+
+**Advantages:** Can clone the repo, run `npm audit`, check git history - full screening.
+
+### Option 2: Claude.ai Web
+
+1. Fork this repo
+2. Connect to a [Claude.ai](https://claude.ai) project
+3. Connect the target repo (read-only)
+4. Ask: `"Screen [repo-name] for security issues"`
+
+**Limitations:** Cannot run tools or check git history.
 
 ## What It Checks
 
@@ -35,33 +70,26 @@ This skill keeps everything sandboxed. Review the screening report *before* the 
 | 4 | **Secrets** | Exposed credentials (indicates poor hygiene) |
 | 5 | **License** | Missing or incompatible |
 
+**Codespaces bonus:** Also runs `npm audit`/`pip-audit` and searches git history.
+
 *Updated January 2026 with patterns from [ReversingLabs](https://www.reversinglabs.com/), [GitGuardian](https://www.gitguardian.com/), and [GitHub Security Lab](https://securitylab.github.com/).*
 
 ## Verdicts
 
 | Verdict | Meaning |
 |---------|---------|
-| **SAFE** | No red flags. OK to clone, then run local tools. |
-| **CAUTION** | Yellow flags present. Review before cloning. |
+| **SAFE** | No red flags. OK to clone locally. |
+| **CAUTION** | Yellow flags present. Review findings first. |
 | **DANGER** | Red flags detected. Do NOT clone or install. |
-
-## Limitations
-
-Cloud screening cannot:
-- Execute code to test runtime behavior
-- Check git history for removed secrets
-- Run `npm audit`, `pip-audit`, `cargo audit`
-
-These require local execution *after* you decide to clone.
 
 ## File Structure
 
 ```
 screening-github-cloud/
-├── SKILL.md        # Core instructions
+├── SKILL.md        # Core instructions (for Claude)
 ├── heuristics.md   # Detection patterns
 ├── examples.md     # Screening walkthroughs
-└── README.md       # This file
+└── README.md       # This file (for humans)
 ```
 
 ## License
