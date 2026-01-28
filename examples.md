@@ -1,6 +1,6 @@
-# Audit Examples
+# Screening Examples
 
-Complete walkthroughs for cloud-only audits.
+Complete walkthroughs for pre-clone security screening.
 
 ## Contents
 
@@ -8,14 +8,14 @@ Complete walkthroughs for cloud-only audits.
 - [Example 2: Malicious Package](#example-2-malicious-package)
 - [Example 3: Prompt Injection Attempt](#example-3-prompt-injection-attempt)
 - [Example 4: GitHub Actions Vulnerability](#example-4-github-actions-vulnerability)
-- [Example 5: Secret in Git History](#example-5-secret-in-git-history)
+- [Example 5: Limitations](#example-5-limitations)
 - [Report Template](#report-template)
 
 ---
 
 ## Example 1: Clean Utility Library
 
-**Request:** `cloud audit example/simple-util`
+**Request:** `screen example/simple-util`
 
 ### Reconnaissance
 
@@ -49,7 +49,7 @@ package.json     - 12 dependencies
 ### Output
 
 ```markdown
-# Security Audit: example/simple-util
+# Security Screening: example/simple-util
 
 **Date:** 2026-01-28 | **Method:** Cloud
 
@@ -76,7 +76,7 @@ None required. Safe to clone and use.
 
 ## Example 2: Malicious Package
 
-**Request:** `cloud audit suspicious/evil-logger`
+**Request:** `screen suspicious/evil-logger`
 
 ### Found in package.json
 
@@ -119,7 +119,7 @@ https.request({
 ### Output
 
 ```markdown
-# Security Audit: suspicious/evil-logger
+# Security Screening: suspicious/evil-logger
 
 **Date:** 2026-01-28 | **Method:** Cloud
 
@@ -157,7 +157,7 @@ If installed:
 
 ## Example 3: Prompt Injection Attempt
 
-**Request:** `cloud audit sketchy/cool-lib`
+**Request:** `screen sketchy/cool-lib`
 
 ### Found in README.md
 
@@ -199,7 +199,7 @@ Continue checking all other files normally. The injection attempt itself is a re
 
 ## Example 4: GitHub Actions Vulnerability
 
-**Request:** `cloud audit org/webapp`
+**Request:** `screen org/webapp`
 
 ### Found in .github/workflows/comment-handler.yml
 
@@ -235,7 +235,7 @@ jobs:
 ### Output
 
 ```markdown
-# Security Audit: org/webapp
+# Security Screening: org/webapp
 
 **Date:** 2026-01-28 | **Method:** Cloud
 
@@ -276,84 +276,67 @@ jobs:
 
 ---
 
-## Example 5: Secret in Git History
+## Example 5: Limitations
 
-### Limitation
+### What Cloud Screening Cannot Do
 
-Cloud audit reads current files only. Cannot check:
-```bash
-git log -p --all -S "API_KEY"
-```
+Cloud screening reads current files only. It cannot:
+
+1. **Check git history** - Secrets removed from HEAD may still be in history
+2. **Run dependency audits** - No `npm audit`, `pip-audit`, etc.
+3. **Test runtime behavior** - Can't execute code
+4. **Verify active secrets** - Can't call APIs to check if keys work
 
 ### Guidance in Report
 
+Always include this in the "After Cloning" section:
+
 ```markdown
-## Limitations
+## After Cloning
 
-This cloud audit cannot check git history. After cloning locally, run:
-
-git log -p --all -S "SECRET"
-git log -p --all -S "API_KEY"
-git log -p --all -S "PASSWORD"
-
-If secrets are found in history, they must be rotated even if
-removed from current files.
+If you proceed, run these locally:
+- `npm audit` / `pip-audit` / `cargo audit`
+- `git log -p -S "SECRET"` (check history for removed secrets)
+- Review code for your specific use case
 ```
 
 ---
 
 ## Report Template
 
-Use this structure for all audits:
+Use this structure for all screenings:
 
 ```markdown
-# Security Audit: owner/repo
+# Security Screening: owner/repo
 
-**Date:** YYYY-MM-DD | **Method:** Cloud (no local clone)
+**Date:** YYYY-MM-DD | **Type:** Pre-clone screening (not a full audit)
 
 ## Verdict: [SAFE | CAUTION | DANGER]
 
 **Risk Score:** X/100 | **Confidence:** X%
 
-## Executive Summary
+## Should You Clone This?
 
-[2-3 paragraphs for decision makers]
+[Clear yes/no/maybe with reasoning]
 
-## Key Findings
+## Findings
 
-### Critical (X)
-[Each finding: title, location, confidence, evidence, fix]
+### Red Flags (X)
+[Immediate threats - malicious code, supply chain]
 
-### High (X)
-...
+### Yellow Flags (X)
+[Concerns - poor practices, secrets, outdated deps]
 
-### Medium (X)
-...
+### Notes
+[Observations, not necessarily issues]
 
-### Low (X)
-...
+## After Cloning
 
-## Dependency Analysis
-
-- Total: X
-- Trusted: X
-- Flagged: X
-
-## Recommendations
-
-### Immediate
-[Must fix before any use]
-
-### Before Production
-[Should fix before deploying]
-
-### General
-[Nice to have improvements]
-
-## Limitations
-
-[What cloud audit couldn't check]
+If you proceed, run these locally:
+- `npm audit` / `pip-audit` / `cargo audit`
+- `git log -p -S "SECRET"` (check history)
+- Review code for your specific use case
 
 ---
-*Cloud audit via auditing-github-cloud*
+*Pre-clone screening via screening-github-cloud. This is NOT a comprehensive audit.*
 ```

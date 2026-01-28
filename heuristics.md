@@ -1,16 +1,16 @@
 # Detection Heuristics
 
-Full pattern library for cloud security audits.
+Pattern library for pre-clone security screening. Organized by threat priority.
 
-## Contents
+## Contents (by priority)
 
-- [Secrets](#secrets)
-- [Malicious Code](#malicious-code)
-- [Supply Chain](#supply-chain)
-- [GitHub Actions](#github-actions)
-- [Injection Vulnerabilities](#injection-vulnerabilities)
-- [Prompt Injection](#prompt-injection)
-- [License](#license)
+1. [Malicious Code](#malicious-code) - Direct threat on install
+2. [Supply Chain](#supply-chain) - Indirect threat via dependencies
+3. [GitHub Actions](#github-actions) - Threat if you fork/contribute
+4. [Injection Vulnerabilities](#injection-vulnerabilities) - Code quality issues
+5. [Prompt Injection](#prompt-injection) - Attacks on the screener itself
+6. [Secrets](#secrets) - Hygiene indicator (yellow flag)
+7. [License](#license) - Legal, not security
 
 ---
 
