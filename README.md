@@ -1,12 +1,12 @@
-# Cloud GitHub Screener
+# Sandboxed GitHub Screener
 
-Pre-clone security screening for GitHub repos. **Decide if a repo is safe to download before it touches your local system.**
+Pre-clone security screening for GitHub repos. **Decide if a repo is safe to download before it touches your main system.**
 
 ## What This Is
 
-A first-pass screening tool that runs in sandboxed cloud environments:
-- **GitHub Codespaces** (recommended) - Full screening with local tools
-- **Claude.ai web** - Pattern-based screening only
+A first-pass screening tool that runs in sandboxed environments:
+- **GitHub Codespaces** - Cloud sandbox (nothing touches your machine)
+- **Docker / OrbStack** - Local sandbox (isolated container)
 
 Use it to answer: "Should I clone/install this repo?"
 
@@ -20,11 +20,13 @@ When evaluating untrusted repos, you face risks:
 - **Supply chain attacks** - Typosquatted dependencies
 - **Prompt injection** - Malicious content trying to manipulate AI
 
-This skill keeps everything sandboxed. The suspicious repo runs on GitHub's servers (Codespaces) or is analyzed without cloning (Claude.ai web). Review the screening report *before* the repo touches your machine.
+This skill keeps everything sandboxed. The suspicious repo runs in an isolated environment. Review the screening report *before* the repo touches your main system.
 
 ## Setup
 
-### Option 1: GitHub Codespaces (Recommended)
+### Option 1: GitHub Codespaces (Cloud Sandbox)
+
+**Best for:** Maximum isolation - suspicious code never touches your machine.
 
 ```bash
 # From your local terminal:
@@ -35,10 +37,10 @@ gh codespace create --repo YOUR-USERNAME/any-repo -m basicLinux32gb
 # 2. SSH into it
 gh codespace ssh
 
-# 3. Install Claude Code CLI (if not present)
+# 3. Install Claude Code CLI
 npm install -g @anthropic-ai/claude-code
 
-# 4. Ask Claude to screen a repo
+# 4. Run screening
 claude "Screen https://github.com/suspicious/repo for security issues"
 
 # 5. View the report
@@ -49,16 +51,33 @@ exit
 gh codespace delete
 ```
 
-**Advantages:** Can clone the repo, run `npm audit`, check git history - full screening.
+**Cost:** 60 free hours/month on 2-core machine.
 
-### Option 2: Claude.ai Web
+### Option 2: Docker / OrbStack (Local Sandbox)
 
-1. Fork this repo
-2. Connect to a [Claude.ai](https://claude.ai) project
-3. Connect the target repo (read-only)
-4. Ask: `"Screen [repo-name] for security issues"`
+**Best for:** Privacy (no cloud), faster iteration, no hour limits.
 
-**Limitations:** Cannot run tools or check git history.
+```bash
+# 1. Create and enter a sandboxed container
+docker run -it --rm \
+  -e ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
+  node:20 bash
+
+# 2. Inside container - install tools
+npm install -g @anthropic-ai/claude-code
+apt-get update && apt-get install -y git glow
+
+# 3. Run screening
+claude "Screen https://github.com/suspicious/repo for security issues"
+
+# 4. View report
+glow SCREENING-REPORT.md
+
+# 5. Exit (container auto-deletes due to --rm)
+exit
+```
+
+**OrbStack users:** Same commands - OrbStack runs Docker containers but faster on Mac.
 
 ## What It Checks
 
@@ -70,7 +89,7 @@ gh codespace delete
 | 4 | **Secrets** | Exposed credentials (indicates poor hygiene) |
 | 5 | **License** | Missing or incompatible |
 
-**Codespaces bonus:** Also runs `npm audit`/`pip-audit` and searches git history.
+**Both options also run:** `npm audit`/`pip-audit`, git history search for secrets.
 
 *Updated January 2026 with patterns from [ReversingLabs](https://www.reversinglabs.com/), [GitGuardian](https://www.gitguardian.com/), and [GitHub Security Lab](https://securitylab.github.com/).*
 
@@ -78,9 +97,19 @@ gh codespace delete
 
 | Verdict | Meaning |
 |---------|---------|
-| **SAFE** | No red flags. OK to clone locally. |
+| **SAFE** | No red flags. OK to clone to your main system. |
 | **CAUTION** | Yellow flags present. Review findings first. |
 | **DANGER** | Red flags detected. Do NOT clone or install. |
+
+## Comparison
+
+| Feature | Codespaces | Docker/OrbStack |
+|---------|------------|-----------------|
+| Isolation | Cloud (maximum) | Local container |
+| Privacy | GitHub sees activity | Fully local |
+| Cost | 60 hrs/month free | Free (unlimited) |
+| Setup | Easier | Requires Docker |
+| Speed | Network latency | Faster |
 
 ## File Structure
 
