@@ -1,75 +1,17 @@
 # Detection Heuristics
 
-Pattern library for pre-clone security screening. Organized by threat priority.
+Pattern library for sandboxed security screening. Organized by threat priority.
 
-## Contents (by priority)
+## Contents
 
 1. [Malicious Code](#malicious-code) - Direct threat on install
-2. [Supply Chain](#supply-chain) - Indirect threat via dependencies
-3. [GitHub Actions](#github-actions) - Threat if you fork/contribute
-4. [Injection Vulnerabilities](#injection-vulnerabilities) - Code quality issues
-5. [Prompt Injection](#prompt-injection) - Attacks on the screener itself
-6. [Secrets](#secrets) - Hygiene indicator (yellow flag)
-7. [License](#license) - Legal, not security
-
----
-
-## Secrets
-
-### High-Confidence Patterns
-
-| Pattern | Description | Confidence |
-|---------|-------------|------------|
-| `AKIA[0-9A-Z]{16}` | AWS Access Key | HIGH |
-| `[A-Za-z0-9/+=]{40}` | AWS Secret (verify context) | MEDIUM |
-| `gh[pousr]_[A-Za-z0-9_]{36,}` | GitHub Token | HIGH |
-| `-----BEGIN (RSA\|EC\|DSA\|OPENSSH )?PRIVATE KEY-----` | Private Key | HIGH |
-| `eyJ[A-Za-z0-9-_]+\.eyJ[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+` | JWT Token | HIGH |
-| `(mysql\|postgres\|mongodb)://[^:]+:[^@]+@` | Database URL | HIGH |
-| `sk-[A-Za-z0-9]{48}` | OpenAI API Key | HIGH |
-| `sk-proj-[A-Za-z0-9-_]{80,}` | OpenAI Project Key (2024+) | HIGH |
-| `xox[baprs]-[A-Za-z0-9-]+` | Slack Token | HIGH |
-| `anthropic-[A-Za-z0-9-]+` | Anthropic API Key | HIGH |
-| `glpat-[A-Za-z0-9-_]{20}` | GitLab PAT | HIGH |
-| `npm_[A-Za-z0-9]{36}` | npm Token | HIGH |
-| `pypi-[A-Za-z0-9-_]{50,}` | PyPI API Token | HIGH |
-
-### Files to Prioritize
-
-- `.env`, `.env.local`, `.env.production`, `.env.*`
-- `config/`, `settings/`, `secrets/`
-- `docker-compose.yml` (environment sections)
-- `.github/workflows/*.yml` (secrets in env)
-- `*.pem`, `*.key`, `*.p12`, `*.pfx`
-- `credentials.json`, `service-account.json`
-
-### False Positive Indicators
-
-Reduce confidence when file/path contains:
-- `example`, `test`, `fake`, `dummy`, `sample`, `mock`
-- `template`, `placeholder`, `xxx`, `your-`
-
-### Generic High-Entropy Secrets
-
-**40% of real leaks are generic secrets** that don't match specific patterns.
-
-**Detection approach:**
-Look for high-entropy strings (random-looking) assigned to sensitive variables:
-
-```
-(password|passwd|pwd|secret|token|key|auth|credential|api_key)\s*[=:]\s*['"][A-Za-z0-9+/=]{16,}['"]
-```
-
-**High-entropy indicators:**
-- String length > 20 characters
-- Mix of uppercase, lowercase, numbers
-- No dictionary words
-- Assigned to variables with sensitive names
-
-**Context matters:**
-- `API_KEY = "abc123"` → LOW confidence (too short, simple)
-- `API_KEY = "aK9x2mPqR7vN5wL8"` → MEDIUM confidence
-- `API_KEY = "key_live_EXAMPLE_NOT_REAL_1234567890"` → HIGH confidence
+2. [Dynamic Analysis](#dynamic-analysis) - Runtime behavior indicators
+3. [Supply Chain](#supply-chain) - Indirect threat via dependencies
+4. [GitHub Actions](#github-actions) - Threat if you fork/contribute
+5. [Injection Vulnerabilities](#injection-vulnerabilities) - Code quality issues
+6. [Prompt Injection](#prompt-injection) - Attacks on the screener itself
+7. [Secrets](#secrets) - Hygiene indicator (yellow flag)
+8. [License](#license) - Legal, not security
 
 ---
 
@@ -139,6 +81,80 @@ python -c.*socket.*subprocess
 
 ---
 
+## Dynamic Analysis
+
+**New in v4.0.0** - Behavioral indicators observed during actual execution.
+
+### Process Monitoring
+
+Run before and after `npm install` / `pip install`:
+
+```bash
+ps aux > /tmp/before.txt
+npm install 2>&1 | tee /tmp/install.log
+ps aux > /tmp/after.txt
+diff /tmp/before.txt /tmp/after.txt
+```
+
+**Red flags in process diff:**
+
+| Pattern | Severity | Meaning |
+|---------|----------|---------|
+| New `node` process still running | HIGH | Background task / persistence |
+| `curl`, `wget` spawned | HIGH | Downloading payloads |
+| `nc`, `netcat` | CRITICAL | Reverse shell attempt |
+| `python -c` | HIGH | Inline script execution |
+| Crypto-related process names | HIGH | Crypto miner |
+
+### Network Activity
+
+**During install, watch for:**
+
+```bash
+# In install log
+grep -E "(curl|wget|nc|POST|GET|http|https)" /tmp/install.log
+```
+
+| Pattern | Severity | Meaning |
+|---------|----------|---------|
+| `curl` to non-npm/pypi domain | HIGH | Payload download |
+| `POST` to unknown host | CRITICAL | Data exfiltration |
+| Webhook URLs (webhook.site, etc.) | CRITICAL | Exfil endpoint |
+| Discord/Telegram webhook | HIGH | Common exfil channels |
+
+### File System Changes
+
+```bash
+# Files created outside project during install
+find /tmp -newer /tmp/before.txt -type f 2>/dev/null
+find ~ -newer /tmp/before.txt -type f 2>/dev/null
+find /etc -newer /tmp/before.txt -type f 2>/dev/null
+```
+
+**Red flags:**
+
+| Location | Severity | Meaning |
+|----------|----------|---------|
+| `~/.ssh/` | CRITICAL | SSH key theft/modification |
+| `~/.aws/`, `~/.config/` | CRITICAL | Credential access |
+| `/tmp/` with executable | HIGH | Staged payload |
+| `~/.bashrc`, `~/.profile` | CRITICAL | Persistence |
+| Cron directories | CRITICAL | Scheduled persistence |
+
+### Install Log Analysis
+
+```bash
+cat /tmp/install.log | grep -iE "(error|warning|permission|denied|secret|token|key|password)"
+```
+
+**Suspicious patterns:**
+- Errors about missing permissions (trying to access protected files)
+- References to credential files
+- Base64 encoded strings in output
+- URLs to non-standard domains
+
+---
+
 ## Supply Chain
 
 ### Typosquatting Detection
@@ -170,7 +186,7 @@ Check for:
 
 ### Slopsquatting (AI-Hallucinated Packages)
 
-**New 2025 attack vector.** LLMs hallucinate fake package names that attackers register.
+**2025+ attack vector.** LLMs hallucinate fake package names that attackers register.
 
 **Detection signals:**
 - Package exists but has < 10 downloads total
@@ -322,6 +338,65 @@ IMPORTANT:.*ignore
 
 ---
 
+## Secrets
+
+### High-Confidence Patterns
+
+| Pattern | Description | Confidence |
+|---------|-------------|------------|
+| `AKIA[0-9A-Z]{16}` | AWS Access Key | HIGH |
+| `[A-Za-z0-9/+=]{40}` | AWS Secret (verify context) | MEDIUM |
+| `gh[pousr]_[A-Za-z0-9_]{36,}` | GitHub Token | HIGH |
+| `-----BEGIN (RSA\|EC\|DSA\|OPENSSH )?PRIVATE KEY-----` | Private Key | HIGH |
+| `eyJ[A-Za-z0-9-_]+\.eyJ[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+` | JWT Token | HIGH |
+| `(mysql\|postgres\|mongodb)://[^:]+:[^@]+@` | Database URL | HIGH |
+| `sk-[A-Za-z0-9]{48}` | OpenAI API Key | HIGH |
+| `sk-proj-[A-Za-z0-9-_]{80,}` | OpenAI Project Key (2024+) | HIGH |
+| `xox[baprs]-[A-Za-z0-9-]+` | Slack Token | HIGH |
+| `anthropic-[A-Za-z0-9-]+` | Anthropic API Key | HIGH |
+| `glpat-[A-Za-z0-9-_]{20}` | GitLab PAT | HIGH |
+| `npm_[A-Za-z0-9]{36}` | npm Token | HIGH |
+| `pypi-[A-Za-z0-9-_]{50,}` | PyPI API Token | HIGH |
+
+### Files to Prioritize
+
+- `.env`, `.env.local`, `.env.production`, `.env.*`
+- `config/`, `settings/`, `secrets/`
+- `docker-compose.yml` (environment sections)
+- `.github/workflows/*.yml` (secrets in env)
+- `*.pem`, `*.key`, `*.p12`, `*.pfx`
+- `credentials.json`, `service-account.json`
+
+### False Positive Indicators
+
+Reduce confidence when file/path contains:
+- `example`, `test`, `fake`, `dummy`, `sample`, `mock`
+- `template`, `placeholder`, `xxx`, `your-`
+
+### Generic High-Entropy Secrets
+
+**40% of real leaks are generic secrets** that don't match specific patterns.
+
+**Detection approach:**
+Look for high-entropy strings (random-looking) assigned to sensitive variables:
+
+```
+(password|passwd|pwd|secret|token|key|auth|credential|api_key)\s*[=:]\s*['"][A-Za-z0-9+/=]{16,}['"]
+```
+
+**High-entropy indicators:**
+- String length > 20 characters
+- Mix of uppercase, lowercase, numbers
+- No dictionary words
+- Assigned to variables with sensitive names
+
+**Context matters:**
+- `API_KEY = "abc123"` → LOW confidence (too short, simple)
+- `API_KEY = "aK9x2mPqR7vN5wL8"` → MEDIUM confidence
+- `API_KEY = "key_live_EXAMPLE_NOT_REAL_1234567890"` → HIGH confidence
+
+---
+
 ## License
 
 ### Copyleft (Viral)
@@ -351,11 +426,53 @@ Check:
 |---------|------------------|
 | Hardcoded secret (active) | CRITICAL |
 | Malicious code / backdoor | CRITICAL |
+| Credential file access during install | CRITICAL |
+| Reverse shell indicators | CRITICAL |
 | SQL/command injection | HIGH |
 | Typosquatting dependency | HIGH |
+| Network exfil during install | HIGH |
 | Vulnerable dependency (CVE) | HIGH |
 | GitHub Actions script injection | HIGH |
+| Background process after install | HIGH |
 | XSS | MEDIUM-HIGH |
 | Outdated dependency | MEDIUM |
 | Missing/incompatible license | MEDIUM |
 | Prompt injection attempt | MEDIUM |
+| Files created outside project | MEDIUM |
+
+---
+
+## Tool-Specific Patterns
+
+### Trivy Output
+
+```bash
+trivy fs . --scanners vuln,secret,misconfig,license --format table
+```
+
+**Look for:**
+- CRITICAL/HIGH CVEs
+- Secrets detected
+- Misconfigurations in Dockerfiles, K8s manifests
+
+### Gitleaks Output
+
+```bash
+gitleaks detect -v --no-git
+```
+
+**Look for:**
+- Verified secrets (high confidence)
+- Secrets in git history (`gitleaks detect -v`)
+
+### actionlint + zizmor
+
+```bash
+actionlint .github/workflows/*.yml
+zizmor .github/workflows/
+```
+
+**Look for:**
+- Script injection warnings
+- Unpinned action refs
+- Dangerous triggers (pull_request_target)

@@ -1,97 +1,83 @@
 # Sandboxed GitHub Screener
 
-Pre-clone security screening for GitHub repos. **Decide if a repo is safe to download before it touches your main system.**
+Deep security screening for GitHub repos in disposable sandbox environments. **Clone, scan, execute, observe - then destroy the sandbox.**
 
 ## What This Is
 
-A first-pass screening tool that runs in sandboxed environments:
-- **GitHub Codespaces** - Cloud sandbox (nothing touches your machine)
-- **Docker / OrbStack** - Local sandbox (isolated container)
+A comprehensive screening tool that runs in fresh, disposable environments:
+- **GitHub Codespaces** - Cloud VM (nothing touches your machine)
+- **Docker / OrbStack** - Local container (isolated, fast)
 
-Use it to answer: "Should I clone/install this repo?"
-
-**This is NOT a comprehensive security audit.** But it catches the obvious red flags before you expose your system.
+Use it to answer: "Is this repo safe to clone and install?"
 
 ## Why Sandboxed?
 
-When evaluating untrusted repos, you face risks:
+Traditional security scanning is static - it reads files but can't see what code actually *does*. This tool uses disposable sandboxes to:
 
-- **Malicious code** - Scripts that run on clone or install
-- **Supply chain attacks** - Typosquatted dependencies
-- **Prompt injection** - Malicious content trying to manipulate AI
+- **Execute install scripts** - See what `npm install` actually runs
+- **Monitor behavior** - Watch for suspicious network calls, file access
+- **Run security tools** - Trivy, Gitleaks, actionlint, zizmor
+- **Observe in safety** - Malicious code runs in an isolated, disposable environment
 
-This skill keeps everything sandboxed. The suspicious repo runs in an isolated environment. Review the screening report *before* the repo touches your main system.
+**After screening, you destroy the sandbox.** Nothing persists.
 
-## Setup
+## Quick Start
 
-### Option 1: GitHub Codespaces (Cloud Sandbox)
-
-**Best for:** Maximum isolation - suspicious code never touches your machine.
+### Option 1: GitHub Codespaces (Cloud)
 
 ```bash
-# From your local terminal:
-
-# 1. Create a sandboxed codespace
+# 1. Create fresh codespace and SSH in
 gh codespace create --repo YOUR-USERNAME/any-repo -m basicLinux32gb
-
-# 2. SSH into it
 gh codespace ssh
 
-# 3. Install Claude Code CLI
+# 2. Install Claude Code
 npm install -g @anthropic-ai/claude-code
+sudo apt-get update && sudo apt-get install -y glow
 
-# 4. Run screening
-claude "Screen https://github.com/suspicious/repo for security issues"
+# 3. Screen a repo
+claude login
+claude "Screen https://github.com/suspicious/repo"
 
-# 5. View the report
+# 4. View report, then destroy
 glow SCREENING-REPORT.md
-
-# 6. When done, exit and delete
 exit
 gh codespace delete
 ```
 
-**Cost:** 60 free hours/month on 2-core machine.
-
-### Option 2: Docker / OrbStack (Local Sandbox)
-
-**Best for:** Privacy (no cloud), faster iteration, no hour limits.
+### Option 2: Docker / OrbStack (Local)
 
 ```bash
-# 1. Create and enter a sandboxed container
-docker run -it --rm \
-  -e ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
-  node:20 bash
+# 1. Create fresh container
+docker run -it --rm node:20 bash
 
-# 2. Inside container - install tools
+# 2. Install tools and screen
 npm install -g @anthropic-ai/claude-code
 apt-get update && apt-get install -y git glow
+claude login
+claude "Screen https://github.com/suspicious/repo"
 
-# 3. Run screening
-claude "Screen https://github.com/suspicious/repo for security issues"
-
-# 4. View report
+# 3. View report, then exit (container auto-deletes)
 glow SCREENING-REPORT.md
-
-# 5. Exit (container auto-deletes due to --rm)
 exit
 ```
 
-**OrbStack users:** Same commands - OrbStack runs Docker containers but faster on Mac.
+## What It Does
 
-## What It Checks
+| Phase | Actions |
+|-------|---------|
+| **Static Analysis** | Scan for malicious patterns, secrets, obfuscation |
+| **Tool Scanning** | Run Trivy (CVEs, secrets), Gitleaks, actionlint, zizmor |
+| **Dynamic Analysis** | Execute `npm install`, observe behavior |
+| **Dependency Audit** | Run `npm audit` / `pip-audit` |
 
-| Priority | Category | Examples |
-|----------|----------|----------|
-| 1 | **Malicious Code** | Postinstall scripts, obfuscation, data exfiltration, backdoors |
-| 2 | **Supply Chain** | Typosquatting, slopsquatting, suspicious packages |
-| 3 | **GitHub Actions** | Script injection, dangerous triggers, compromised actions |
-| 4 | **Secrets** | Exposed credentials (indicates poor hygiene) |
-| 5 | **License** | Missing or incompatible |
+### Security Tools Used
 
-**Both options also run:** `npm audit`/`pip-audit`, git history search for secrets.
-
-*Updated January 2026 with patterns from [ReversingLabs](https://www.reversinglabs.com/), [GitGuardian](https://www.gitguardian.com/), and [GitHub Security Lab](https://securitylab.github.com/).*
+| Tool | Purpose |
+|------|---------|
+| **Trivy** | CVEs, secrets, misconfigs, licenses |
+| **Gitleaks** | Fast secret scanning with git history |
+| **actionlint** | GitHub Actions syntax/compatibility |
+| **zizmor** | GitHub Actions security vulnerabilities |
 
 ## Verdicts
 
@@ -101,11 +87,24 @@ exit
 | **CAUTION** | Yellow flags present. Review findings first. |
 | **DANGER** | Red flags detected. Do NOT clone or install. |
 
+## Risk Model
+
+**The sandbox is the protection.** You're running in a fresh, disposable environment with nothing valuable:
+
+| Asset | In Sandbox? | Risk |
+|-------|-------------|------|
+| Personal files | No | None |
+| SSH keys | No | None |
+| Browser cookies | No | None |
+| Claude session | Yes | Minimal* |
+
+*Claude Max = unlimited usage, fixed price. Token can be revoked with `claude logout`. Worst case: attacker gets temporary API access to a service you're not charged per-use for.
+
 ## Comparison
 
 | Feature | Codespaces | Docker/OrbStack |
 |---------|------------|-----------------|
-| Isolation | Cloud (maximum) | Local container |
+| Isolation | Cloud VM | Local container |
 | Privacy | GitHub sees activity | Fully local |
 | Cost | 60 hrs/month free | Free (unlimited) |
 | Setup | Easier | Requires Docker |
@@ -121,6 +120,17 @@ screening-github-cloud/
 └── README.md       # This file (for humans)
 ```
 
+## Best Practices
+
+1. **Always use fresh sandbox** - Don't reuse between screenings
+2. **Destroy after use** - `gh codespace delete` or `exit` with `--rm`
+3. **Review the report** - Understand what was found before cloning
+4. **Run `claude logout`** - Invalidate session token after screening
+
 ## License
 
 MIT - Use freely, modify, share. No warranty.
+
+---
+
+*Updated January 2026. Uses patterns from [ReversingLabs](https://www.reversinglabs.com/), [GitGuardian](https://www.gitguardian.com/), [Aqua Trivy](https://trivy.dev/), and [GitHub Security Lab](https://securitylab.github.com/).*
