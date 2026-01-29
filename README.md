@@ -29,7 +29,7 @@ claude login
 claude --dangerously-skip-permissions "screen https://github.com/owner/repo"
 
 # 6. Review the report
-glow SCREENING-REPORT.md
+glow reports/
 
 # 7. Exit and destroy
 exit
@@ -55,7 +55,7 @@ claude login
 claude --dangerously-skip-permissions "screen https://github.com/owner/repo"
 
 # 5. Review report, then exit (container auto-deletes)
-glow SCREENING-REPORT.md
+glow reports/
 exit
 ```
 

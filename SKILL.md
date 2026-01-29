@@ -3,7 +3,7 @@ name: screening-github-cloud
 description: Pre-clone security screening for GitHub repositories in sandboxed environments. Supports GitHub Codespaces (cloud) and Docker/OrbStack (local sandbox). Activates when user asks to "screen repo", "is this repo safe", "check before cloning", or mentions security screening.
 license: MIT
 metadata:
-  version: "4.3.1"
+  version: "4.3.2"
   author: gradigit
   updated: "2026-01-29"
   environment: codespaces, docker, orbstack
@@ -75,7 +75,7 @@ claude login
 claude "Screen https://github.com/suspicious/repo"
 
 # 6. View report
-glow SCREENING-REPORT.md
+glow reports/
 
 # 7. Exit and destroy
 exit
@@ -543,7 +543,7 @@ Save to `SCREENING-REPORT.md`:
 [What to do based on verdict]
 
 ---
-*Sandboxed screening via screening-github-cloud v4.3.1*
+*Sandboxed screening via screening-github-cloud v4.3.2*
 *Dynamic analysis performed in disposable environment.*
 ```
 

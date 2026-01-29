@@ -2,9 +2,10 @@
 
 All notable changes to this skill are documented here.
 
-## [4.3.1] - 2026-01-29
+## [4.3.2] - 2026-01-29
 
 ### Fixed
+- Report saving uses `mv` instead of `cp` — no more duplicate `SCREENING-REPORT.md` left in repo root
 - `gh auth login` missing `-s repo` scope — private repo screening failed because default scopes don't include private repo access
 
 ## [4.3.0] - 2026-01-29
