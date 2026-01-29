@@ -2,66 +2,79 @@
 
 Deep security screening for GitHub repos in disposable sandbox environments. **Clone, scan, execute, observe - then destroy the sandbox.**
 
-## What This Is
+This is an [Agent Skill](https://agentskills.io) - a portable set of instructions that any compatible AI coding agent can discover and use. Agent Skills follow an [open standard](https://github.com/agentskills/agentskills) supported by Claude Code, GitHub Copilot, Cursor, OpenAI Codex, Gemini CLI, and others.
 
-A comprehensive screening tool that runs in fresh, disposable environments:
-- **GitHub Codespaces** - Cloud VM (nothing touches your machine)
-- **Docker / OrbStack** - Local container (isolated, fast)
+## Installation & Usage
 
-Use it to answer: "Is this repo safe to clone and install?"
+This skill runs inside a **disposable sandbox**. Do not install on your local machine.
 
-## Why Sandboxed?
-
-Traditional security scanning is static - it reads files but can't see what code actually *does*. This tool uses disposable sandboxes to:
-
-- **Execute install scripts** - See what `npm install` actually runs
-- **Monitor behavior** - Watch for suspicious network calls, file access
-- **Run security tools** - Trivy, Gitleaks, actionlint, zizmor
-- **Observe in safety** - Malicious code runs in an isolated, disposable environment
-
-**After screening, you destroy the sandbox.** Nothing persists.
-
-## Quick Start
-
-### Option 1: GitHub Codespaces (Cloud)
+### GitHub Codespaces (Recommended)
 
 ```bash
-# 1. Create fresh codespace and SSH in
+# 1. Create a fresh Codespace and SSH in
 gh codespace create --repo YOUR-USERNAME/any-repo -m basicLinux32gb
 gh codespace ssh
 
-# 2. Install Claude Code
+# 2. Install Claude Code CLI
 npm install -g @anthropic-ai/claude-code
-sudo apt-get update && sudo apt-get install -y glow
 
-# 3. Screen a repo
+# 3. Install the screening skill
+mkdir -p ~/.claude/skills
+git clone https://github.com/gradigit/screening-github-cloud ~/.claude/skills/screening-github-cloud
+
+# 4. Login to Claude
 claude login
-claude "Screen https://github.com/suspicious/repo"
 
-# 4. View report, then destroy
+# 5. Screen a repo (the skill handles installing all security tools)
+claude --dangerously-skip-permissions "screen https://github.com/owner/repo"
+
+# 6. Review the report
 glow SCREENING-REPORT.md
+
+# 7. Exit and destroy
 exit
 gh codespace delete
 ```
 
-### Option 2: Docker / OrbStack (Local)
+### Docker / OrbStack
 
 ```bash
-# 1. Create fresh container
+# 1. Create a fresh container
 docker run -it --rm node:20 bash
 
-# 2. Install tools and screen
+# 2. Install Claude Code CLI and git
 npm install -g @anthropic-ai/claude-code
-apt-get update && apt-get install -y git glow
-claude login
-claude "Screen https://github.com/suspicious/repo"
+apt-get update && apt-get install -y git
 
-# 3. View report, then exit (container auto-deletes)
+# 3. Install the screening skill
+mkdir -p ~/.claude/skills
+git clone https://github.com/gradigit/screening-github-cloud ~/.claude/skills/screening-github-cloud
+
+# 4. Login and screen
+claude login
+claude --dangerously-skip-permissions "screen https://github.com/owner/repo"
+
+# 5. Review report, then exit (container auto-deletes)
 glow SCREENING-REPORT.md
 exit
 ```
 
+### Other Compatible Agents
+
+Any agent that supports the [Agent Skills open standard](https://agentskills.io/specification) can use this skill. Clone the repo into the agent's skill discovery path.
+
+### Trigger Phrases
+
+The skill activates when you say things like:
+- "screen this repo"
+- "is this repo safe"
+- "check before cloning"
+- "should I clone this"
+- "security screening"
+
 ## What It Does
+
+The skill handles everything after installation, including installing security tools (Trivy, Gitleaks, actionlint, zizmor) and running the full screening workflow:
 
 | Phase | Actions |
 |-------|---------|
@@ -69,15 +82,7 @@ exit
 | **Tool Scanning** | Run Trivy (CVEs, secrets), Gitleaks, actionlint, zizmor |
 | **Dynamic Analysis** | Execute `npm install`, observe behavior |
 | **Dependency Audit** | Run `npm audit` / `pip-audit` |
-
-### Security Tools Used
-
-| Tool | Purpose |
-|------|---------|
-| **Trivy** | CVEs, secrets, misconfigs, licenses |
-| **Gitleaks** | Fast secret scanning with git history |
-| **actionlint** | GitHub Actions syntax/compatibility |
-| **zizmor** | GitHub Actions security vulnerabilities |
+| **Deep Dependency Investigation** | Install and inspect suspicious dependencies in isolation |
 
 ## Verdicts
 
@@ -87,34 +92,17 @@ exit
 | **CAUTION** | Yellow flags present. Review findings first. |
 | **DANGER** | Red flags detected. Do NOT clone or install. |
 
-## Risk Model
+## Philosophy
 
-**The sandbox is the protection.** You're running in a fresh, disposable environment with nothing valuable:
+**The sandbox is the protection, not network isolation.**
 
-| Asset | In Sandbox? | Risk |
-|-------|-------------|------|
-| Personal files | No | None |
-| SSH keys | No | None |
-| Browser cookies | No | None |
-| Claude session | Yes | Minimal* |
-
-*Claude Max = unlimited usage, fixed price. Token can be revoked with `claude logout`. Worst case: attacker gets temporary API access to a service you're not charged per-use for.
-
-## Comparison
-
-| Feature | Codespaces | Docker/OrbStack |
-|---------|------------|-----------------|
-| Isolation | Cloud VM | Local container |
-| Privacy | GitHub sees activity | Fully local |
-| Cost | 60 hrs/month free | Free (unlimited) |
-| Setup | Easier | Requires Docker |
-| Speed | Network latency | Faster |
+The skill runs in a fresh, disposable environment with nothing valuable. It can execute install scripts, observe runtime behavior, and do real dynamic analysis. After screening, the sandbox is destroyed.
 
 ## File Structure
 
 ```
 screening-github-cloud/
-├── SKILL.md        # Core instructions (for Claude)
+├── SKILL.md        # Core skill instructions (for agents)
 ├── heuristics.md   # Detection patterns
 ├── examples.md     # Screening walkthroughs
 ├── CHANGELOG.md    # Version history
@@ -122,17 +110,10 @@ screening-github-cloud/
 └── README.md       # This file (for humans)
 ```
 
-## Best Practices
-
-1. **Always use fresh sandbox** - Don't reuse between screenings
-2. **Destroy after use** - `gh codespace delete` or `exit` with `--rm`
-3. **Review the report** - Understand what was found before cloning
-4. **Run `claude logout`** - Invalidate session token after screening
-
 ## License
 
 MIT - Use freely, modify, share. No warranty.
 
 ---
 
-*Updated January 2026. Uses patterns from [ReversingLabs](https://www.reversinglabs.com/), [GitGuardian](https://www.gitguardian.com/), [Aqua Trivy](https://trivy.dev/), and [GitHub Security Lab](https://securitylab.github.com/).*
+*Built following the [Agent Skills open standard](https://agentskills.io). Updated January 2026.*
