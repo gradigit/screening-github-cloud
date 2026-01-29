@@ -59,7 +59,7 @@ You're running in a fresh, disposable environment (Codespace or Docker container
 
 ```bash
 # 1. Create fresh codespace
-gh codespace create --repo YOUR-USERNAME/screening-sandbox -m basicLinux32gb
+gh codespace create --repo YOUR-USERNAME/any-repo -m basicLinux32gb
 
 # 2. SSH in
 gh codespace ssh
@@ -180,7 +180,7 @@ Reports are then browsable in the repo's `reports/` directory on GitHub.
 10. Run dependency audits (npm audit, pip-audit)
 11. **Deep dive suspicious dependencies** (install, inspect, compare)
 12. Generate screening report
-13. Save report to screening-sandbox repo (see Saving Reports section)
+13. Save report to Codespace's repo (see Saving Reports section)
 14. Destroy sandbox
 
 Mark each task `in_progress` when starting, `completed` when done.

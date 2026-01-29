@@ -6,7 +6,7 @@ All notable changes to this skill are documented here.
 
 ### Added
 - **Screening Private Repos** section - `gh auth login` workflow for private repo access
-- **Saving Reports** section - commit reports to `screening-sandbox` repo for GitHub browsing
+- **Saving Reports** section - commit reports to Codespace's repo for GitHub browsing
 - Workflow steps 2 (private repo auth) and 13 (save report) added
 - Docker/OrbStack `gh` installation instructions for private repo screening
 - README: private repo instructions, report saving instructions
