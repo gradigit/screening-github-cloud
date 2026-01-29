@@ -2,6 +2,21 @@
 
 All notable changes to this skill are documented here.
 
+## [4.3.0] - 2026-01-29
+
+### Added
+- **Screening Private Repos** section - `gh auth login` workflow for private repo access
+- **Saving Reports** section - commit reports to `screening-sandbox` repo for GitHub browsing
+- Workflow steps 2 (private repo auth) and 13 (save report) added
+- Docker/OrbStack `gh` installation instructions for private repo screening
+- README: private repo instructions, report saving instructions
+- README: describes skill as Agent Skill with link to [agentskills.io](https://agentskills.io)
+
+### Changed
+- Workflow now has 14 steps (was 12)
+- README rewritten with installation & usage focus
+- Version bump to 4.3.0
+
 ## [4.2.0] - 2026-01-29
 
 ### Added

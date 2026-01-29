@@ -3,7 +3,7 @@ name: screening-github-cloud
 description: Pre-clone security screening for GitHub repositories in sandboxed environments. Supports GitHub Codespaces (cloud) and Docker/OrbStack (local sandbox). Activates when user asks to "screen repo", "is this repo safe", "check before cloning", or mentions security screening.
 license: MIT
 metadata:
-  version: "4.2.0"
+  version: "4.3.0"
   author: gradigit
   updated: "2026-01-29"
   environment: codespaces, docker, orbstack
@@ -116,22 +116,72 @@ exit
 
 ---
 
+## Screening Private Repos
+
+The default Codespace `GITHUB_TOKEN` is scoped only to the repo the Codespace was created from. To clone a different private repo for screening, re-authenticate `gh`:
+
+```bash
+unset GITHUB_TOKEN
+gh auth login
+```
+
+**When to do this:** At the start of screening, if the target repo URL is private, check if `git ls-remote <url>` succeeds. If it fails with 403, run the re-auth steps above, then proceed.
+
+**In Docker/OrbStack:** Install and authenticate `gh` inside the container:
+
+```bash
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list
+sudo apt update && sudo apt install gh
+gh auth login
+```
+
+---
+
+## Saving Reports
+
+After generating the screening report, save it to the `screening-sandbox` repo so it can be browsed on GitHub.
+
+```bash
+# Extract owner/repo from the target URL for the filename
+OWNER_REPO="owner-repo"  # e.g., "facebook-react"
+DATE=$(date +%Y-%m-%d)
+
+# Copy report to screening-sandbox
+cd /workspaces/screening-sandbox
+mkdir -p reports
+cp ~/SCREENING-REPORT.md "reports/${DATE}-${OWNER_REPO}.md"
+
+# Commit and push
+git add reports/
+git commit -m "screening: ${OWNER_REPO} ${DATE}"
+git push
+```
+
+Reports are then browsable at the user's `screening-sandbox` repo under `reports/`.
+
+**Always save the report before destroying the sandbox.** Once the Codespace is deleted, the report is gone.
+
+---
+
 ## Screening Workflow
 
 **Use TaskCreate to track progress through these steps:**
 
 1. Confirm running in fresh sandbox (Codespaces or Docker)
-2. Clone target repo to ./target-repo
-3. Get repo metadata (stars, age, contributors)
-4. Run security scanners (Trivy, Gitleaks)
-5. Check GitHub Actions (actionlint, zizmor)
-6. Static analysis for malicious patterns
-7. Dynamic analysis: run npm install / pip install
-8. Observe behavior (processes, network attempts)
-9. Run dependency audits (npm audit, pip-audit)
-10. **Deep dive suspicious dependencies** (install, inspect, compare)
-11. Generate screening report
-12. Destroy sandbox
+2. If private repo: ensure `gh` is authenticated (see Private Repos section)
+3. Clone target repo to ./target-repo
+4. Get repo metadata (stars, age, contributors)
+5. Run security scanners (Trivy, Gitleaks)
+6. Check GitHub Actions (actionlint, zizmor)
+7. Static analysis for malicious patterns
+8. Dynamic analysis: run npm install / pip install
+9. Observe behavior (processes, network attempts)
+10. Run dependency audits (npm audit, pip-audit)
+11. **Deep dive suspicious dependencies** (install, inspect, compare)
+12. Generate screening report
+13. Save report to screening-sandbox repo (see Saving Reports section)
+14. Destroy sandbox
 
 Mark each task `in_progress` when starting, `completed` when done.
 
@@ -493,7 +543,7 @@ Save to `SCREENING-REPORT.md`:
 [What to do based on verdict]
 
 ---
-*Sandboxed screening via screening-github-cloud v4.2.0*
+*Sandboxed screening via screening-github-cloud v4.3.0*
 *Dynamic analysis performed in disposable environment.*
 ```
 

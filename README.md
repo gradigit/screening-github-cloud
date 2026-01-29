@@ -59,6 +59,37 @@ glow SCREENING-REPORT.md
 exit
 ```
 
+### Screening Private Repos
+
+The default Codespace token is scoped to its own repo only. To screen a private repo, re-authenticate with `gh` inside the Codespace:
+
+```bash
+# After SSH-ing into the Codespace
+unset GITHUB_TOKEN
+gh auth login
+```
+
+This gives you a broader token that can access your private repos. Then screen as normal:
+
+```bash
+claude --dangerously-skip-permissions "screen https://github.com/owner/private-repo"
+```
+
+### Saving Reports to GitHub
+
+Reports can be committed to your `screening-sandbox` repo so you can browse them on GitHub:
+
+```bash
+# After screening, from within the Codespace
+cd /workspaces/screening-sandbox
+cp ~/SCREENING-REPORT.md reports/$(date +%Y-%m-%d)-owner-repo.md
+git add reports/
+git commit -m "screening: owner/repo $(date +%Y-%m-%d)"
+git push
+```
+
+Reports are then browsable at `github.com/YOUR-USERNAME/screening-sandbox/tree/main/reports`.
+
 ### Other Compatible Agents
 
 Any agent that supports the [Agent Skills open standard](https://agentskills.io/specification) can use this skill. Clone the repo into the agent's skill discovery path.
