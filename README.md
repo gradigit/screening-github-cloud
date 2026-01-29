@@ -15,8 +15,9 @@ This skill runs inside a **disposable sandbox**. Do not install on your local ma
 gh codespace create --repo YOUR-USERNAME/any-repo -m basicLinux32gb
 gh codespace ssh
 
-# 2. Install Claude Code CLI
+# 2. Install Claude Code CLI and alias to skip permissions (sandbox is the protection)
 npm install -g @anthropic-ai/claude-code
+echo 'alias claude="claude --dangerously-skip-permissions"' >> ~/.bashrc && source ~/.bashrc
 
 # 3. Install the screening skill
 mkdir -p ~/.claude/skills
@@ -26,7 +27,7 @@ git clone https://github.com/gradigit/screening-github-cloud ~/.claude/skills/sc
 claude login
 
 # 5. Screen a repo (the skill handles installing all security tools)
-claude --dangerously-skip-permissions "screen https://github.com/owner/repo"
+claude "screen https://github.com/owner/repo"
 
 # 6. Review the report
 glow reports/
@@ -45,6 +46,7 @@ docker run -it --rm node:20 bash
 # 2. Install Claude Code CLI and git
 npm install -g @anthropic-ai/claude-code
 apt-get update && apt-get install -y git
+echo 'alias claude="claude --dangerously-skip-permissions"' >> ~/.bashrc && source ~/.bashrc
 
 # 3. Install the screening skill
 mkdir -p ~/.claude/skills
@@ -52,7 +54,7 @@ git clone https://github.com/gradigit/screening-github-cloud ~/.claude/skills/sc
 
 # 4. Login and screen
 claude login
-claude --dangerously-skip-permissions "screen https://github.com/owner/repo"
+claude "screen https://github.com/owner/repo"
 
 # 5. Review report, then exit (container auto-deletes)
 glow reports/
