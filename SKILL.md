@@ -150,7 +150,7 @@ DATE=$(date +%Y-%m-%d)
 # Navigate to the Codespace's repo root
 cd $(git -C /workspaces/$(ls /workspaces/ | head -1) rev-parse --show-toplevel)
 mkdir -p reports
-cp ~/SCREENING-REPORT.md "reports/${DATE}-${OWNER_REPO}.md"
+mv ~/SCREENING-REPORT.md "reports/${DATE}-${OWNER_REPO}.md"
 
 # Commit and push
 git add reports/
