@@ -66,7 +66,7 @@ The default Codespace token is scoped to its own repo only. To screen a private 
 ```bash
 # After SSH-ing into the Codespace
 unset GITHUB_TOKEN
-gh auth login
+gh auth login -s repo
 ```
 
 This gives you a broader token that can access your private repos. Then screen as normal:

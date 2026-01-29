@@ -126,7 +126,7 @@ no unexpected network activity, no files created outside project.
 Safe to clone to your local machine.
 
 ---
-*Sandboxed screening via screening-github-cloud v4.3.0*
+*Sandboxed screening via screening-github-cloud v4.3.1*
 ```
 
 ---
@@ -257,7 +257,7 @@ HIGH: Hardcoded credential detected
 3. Report to npm security team
 
 ---
-*Sandboxed screening via screening-github-cloud v4.3.0*
+*Sandboxed screening via screening-github-cloud v4.3.1*
 ```
 
 ---
@@ -346,7 +346,7 @@ No issues found.
 `npm install` completed normally, no suspicious behavior.
 
 ---
-*Sandboxed screening via screening-github-cloud v4.3.0*
+*Sandboxed screening via screening-github-cloud v4.3.1*
 ```
 
 ---
@@ -454,7 +454,7 @@ None in application code.
 Application code: `npm install` normal, no issues.
 
 ---
-*Sandboxed screening via screening-github-cloud v4.3.0*
+*Sandboxed screening via screening-github-cloud v4.3.1*
 ```
 
 ---
@@ -559,7 +559,7 @@ None.
 3. Check if this was intentional or a typo
 
 ---
-*Sandboxed screening via screening-github-cloud v4.3.0*
+*Sandboxed screening via screening-github-cloud v4.3.1*
 ```
 
 ---
@@ -673,7 +673,7 @@ Normal behavior observed during npm install.
 2. Or manually review postinstall scripts before running npm install locally
 
 ---
-*Sandboxed screening via screening-github-cloud v4.3.0*
+*Sandboxed screening via screening-github-cloud v4.3.1*
 *Note: Reduced confidence due to tool installation failures.*
 ```
 
@@ -731,6 +731,6 @@ Use this structure for all screenings:
 [What to do based on verdict]
 
 ---
-*Sandboxed screening via screening-github-cloud v4.3.0*
+*Sandboxed screening via screening-github-cloud v4.3.1*
 *Dynamic analysis performed in disposable environment.*
 ```

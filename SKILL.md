@@ -3,7 +3,7 @@ name: screening-github-cloud
 description: Pre-clone security screening for GitHub repositories in sandboxed environments. Supports GitHub Codespaces (cloud) and Docker/OrbStack (local sandbox). Activates when user asks to "screen repo", "is this repo safe", "check before cloning", or mentions security screening.
 license: MIT
 metadata:
-  version: "4.3.0"
+  version: "4.3.1"
   author: gradigit
   updated: "2026-01-29"
   environment: codespaces, docker, orbstack
@@ -122,7 +122,7 @@ The default Codespace `GITHUB_TOKEN` is scoped only to the repo the Codespace wa
 
 ```bash
 unset GITHUB_TOKEN
-gh auth login
+gh auth login -s repo
 ```
 
 **When to do this:** At the start of screening, if the target repo URL is private, check if `git ls-remote <url>` succeeds. If it fails with 403, run the re-auth steps above, then proceed.
@@ -133,7 +133,7 @@ gh auth login
 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list
 sudo apt update && sudo apt install gh
-gh auth login
+gh auth login -s repo
 ```
 
 ---
@@ -543,7 +543,7 @@ Save to `SCREENING-REPORT.md`:
 [What to do based on verdict]
 
 ---
-*Sandboxed screening via screening-github-cloud v4.3.0*
+*Sandboxed screening via screening-github-cloud v4.3.1*
 *Dynamic analysis performed in disposable environment.*
 ```
 
