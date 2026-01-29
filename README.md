@@ -77,18 +77,15 @@ claude --dangerously-skip-permissions "screen https://github.com/owner/private-r
 
 ### Saving Reports to GitHub
 
-Reports can be committed to your `screening-sandbox` repo so you can browse them on GitHub:
+Reports are committed to whatever repo the Codespace was created from, so you can browse them on GitHub:
 
 ```bash
-# After screening, from within the Codespace
-cd /workspaces/screening-sandbox
-cp ~/SCREENING-REPORT.md reports/$(date +%Y-%m-%d)-owner-repo.md
-git add reports/
-git commit -m "screening: owner/repo $(date +%Y-%m-%d)"
-git push
+# The skill automatically saves reports to the Codespace's repo
+# under reports/YYYY-MM-DD-owner-repo.md
+# Browse them on GitHub in the repo's reports/ directory
 ```
 
-Reports are then browsable at `github.com/YOUR-USERNAME/screening-sandbox/tree/main/reports`.
+The skill handles this automatically at the end of screening.
 
 ### Other Compatible Agents
 

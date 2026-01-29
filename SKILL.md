@@ -140,15 +140,15 @@ gh auth login
 
 ## Saving Reports
 
-After generating the screening report, save it to the `screening-sandbox` repo so it can be browsed on GitHub.
+After generating the screening report, save it to the Codespace's repo so it can be browsed on GitHub.
 
 ```bash
 # Extract owner/repo from the target URL for the filename
 OWNER_REPO="owner-repo"  # e.g., "facebook-react"
 DATE=$(date +%Y-%m-%d)
 
-# Copy report to screening-sandbox
-cd /workspaces/screening-sandbox
+# Navigate to the Codespace's repo root
+cd $(git -C /workspaces/$(ls /workspaces/ | head -1) rev-parse --show-toplevel)
 mkdir -p reports
 cp ~/SCREENING-REPORT.md "reports/${DATE}-${OWNER_REPO}.md"
 
@@ -158,7 +158,7 @@ git commit -m "screening: ${OWNER_REPO} ${DATE}"
 git push
 ```
 
-Reports are then browsable at the user's `screening-sandbox` repo under `reports/`.
+Reports are then browsable in the repo's `reports/` directory on GitHub.
 
 **Always save the report before destroying the sandbox.** Once the Codespace is deleted, the report is gone.
 
