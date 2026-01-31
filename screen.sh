@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="5.0.0"
+VERSION="5.0.1"
 DISPLAY_NAME="screener"
 MACHINE_TYPE="basicLinux32gb"
 MARKER=".screening-tools-installed"
@@ -16,8 +16,8 @@ usage() {
 screen.sh — One-command sandboxed GitHub repo screening
 
 Usage:
-  ./screen.sh <repo-url> [options]
-  ./screen.sh --help
+  screen-repo <repo-url> [options]
+  screen-repo --help
 
 Options:
   --destroy   Delete Codespace after screening (full wipe)
@@ -25,20 +25,20 @@ Options:
   --help      Show this help
 
 Examples:
-  ./screen.sh https://github.com/owner/repo
-  ./screen.sh https://github.com/owner/repo --destroy
-  ./screen.sh https://github.com/owner/repo --fresh
+  screen-repo https://github.com/owner/repo
+  screen-repo https://github.com/owner/repo --destroy
+  screen-repo https://github.com/owner/repo --fresh
 
 First Run:
-  1. Creates a Codespace, installs Claude Code + security tools
+  1. Creates a Codespace, installs Claude Code CLI
   2. Opens interactive SSH — you run: claude login
-  3. Then run: claude --dangerously-skip-permissions "screen <url>"
+  3. Then run: claude "screen <url>"
   4. Exit when done. Codespace stops (persists for reuse).
 
 Subsequent Runs (Claude already logged in):
-  1. Reuses existing Codespace
-  2. Claude starts screening automatically (no interaction needed)
-  3. After screening, Codespace stops
+  1. Reuses existing Codespace, opens interactive SSH
+  2. Run: claude "screen <url>"
+  3. Exit when done. Codespace stops.
 
 Security Tradeoffs:
   REUSE (default):
@@ -74,7 +74,7 @@ for arg in "$@"; do
   esac
 done
 
-[[ -n "$TARGET_URL" ]] || die "Missing repo URL. Usage: ./screen.sh <github-url> [--destroy] [--fresh]"
+[[ -n "$TARGET_URL" ]] || die "Missing repo URL. Usage: screen-repo <github-url> [--destroy] [--fresh]"
 
 # --- Check Prerequisites ---
 
@@ -111,12 +111,14 @@ else
 fi
 
 # --- Idempotent Provisioning ---
+# Only installs Claude Code CLI + screening skill.
+# Security tools (Trivy, Gitleaks, etc.) are installed by the skill itself during screening.
 
 echo "Checking provisioning status..."
 INSTALLED=$(gh codespace ssh -c "$CODESPACE_NAME" -- "test -f ~/$MARKER && echo yes || echo no" 2>/dev/null || echo "no")
 
 if [[ "$INSTALLED" != "yes" ]]; then
-  echo "Installing tools (first time setup)..."
+  echo "Installing Claude Code CLI + screening skill..."
   gh codespace ssh -c "$CODESPACE_NAME" -- 'bash -s' <<'PROVISION'
 set -e
 
@@ -129,25 +131,6 @@ if [ ! -d ~/.claude/skills/screening-github-cloud ]; then
   git clone https://github.com/gradigit/screening-github-cloud ~/.claude/skills/screening-github-cloud
 fi
 
-# Glow (markdown renderer)
-sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/charm.gpg
-echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
-sudo apt-get update && sudo apt-get install -y glow
-
-# Trivy
-curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
-
-# Gitleaks
-GITLEAKS_VERSION=8.18.0
-curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | sudo tar -xz -C /usr/local/bin gitleaks
-
-# Optional: actionlint (needs go)
-go install github.com/rhysd/actionlint/cmd/actionlint@latest 2>/dev/null || echo "actionlint: go not available, skipping"
-
-# Optional: zizmor (needs pip)
-pip install zizmor 2>/dev/null || echo "zizmor: pip not available, skipping"
-
 # Alias claude to skip permissions (sandbox is the protection)
 grep -q 'alias claude=' ~/.bashrc 2>/dev/null || {
   echo 'alias claude="claude --dangerously-skip-permissions"' >> ~/.bashrc
@@ -158,45 +141,33 @@ touch ~/.screening-tools-installed
 
 echo ""
 echo "========================================"
-echo "  Tools installed successfully!"
+echo "  Claude Code + screening skill installed"
 echo "========================================"
 PROVISION
   echo "Provisioning complete."
 else
-  echo "Tools already installed."
+  echo "Already provisioned."
 fi
 
-# --- Try Auto-Run Claude ---
+# --- Open Interactive SSH ---
 
 echo ""
-echo "Attempting to start screening automatically..."
+echo "========================================"
+echo "  Opening SSH session to Codespace"
+echo "========================================"
+echo ""
+echo "  Inside the Codespace, run:"
+echo ""
+echo "  claude \"screen $TARGET_URL\""
+echo ""
+echo "  First time? Run 'claude login' first."
+echo "  Private repo? Run: unset GITHUB_TOKEN && gh auth login -s repo"
+echo ""
+echo "  Type 'exit' when done."
+echo "========================================"
+echo ""
 
-SCREEN_CMD="claude --dangerously-skip-permissions \"screen $TARGET_URL\""
-
-if gh codespace ssh -c "$CODESPACE_NAME" -- "bash -lc '$SCREEN_CMD'" 2>/dev/null; then
-  echo ""
-  echo "Screening complete."
-else
-  AUTO_EXIT=$?
-  echo ""
-  echo "Auto-run failed (exit $AUTO_EXIT) — Claude may not be logged in yet."
-  echo ""
-  echo "========================================"
-  echo "  Opening interactive SSH session"
-  echo "========================================"
-  echo ""
-  echo "  Run these commands inside the Codespace:"
-  echo ""
-  echo "  1. claude login"
-  echo "  2. claude --dangerously-skip-permissions \"screen $TARGET_URL\""
-  echo "  3. exit"
-  echo ""
-  echo "  For private repos: unset GITHUB_TOKEN && gh auth login -s repo"
-  echo ""
-  echo "========================================"
-  echo ""
-  gh codespace ssh -c "$CODESPACE_NAME"
-fi
+gh codespace ssh -c "$CODESPACE_NAME"
 
 # --- Stop or Destroy ---
 
