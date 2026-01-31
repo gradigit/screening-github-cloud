@@ -2,6 +2,28 @@
 
 All notable changes to this skill are documented here.
 
+## [5.0.0] - 2026-01-31
+
+### Added
+- **screen.sh** — one-command screening launcher script
+  - `./screen.sh <url>` handles Codespace creation, tool installation, and screening
+  - `--destroy` flag: delete Codespace after screening (full wipe)
+  - `--fresh` flag: force new Codespace (ignore existing)
+  - `--help` with usage and security tradeoff explanation
+  - Idempotent provisioning via `~/.screening-tools-installed` marker
+  - Auto-run: reuses Codespace and starts Claude screening automatically on subsequent runs
+  - Fallback: opens interactive SSH if Claude not logged in yet
+  - Codespace lookup via `--display-name screener`
+- README: "One-Command Screening" section at top
+- README: "Reuse vs Destroy: Security Tradeoffs" section
+
+### Changed
+- README: file structure updated to include screen.sh
+- Version bump to 5.0.0
+
+### Deprecated
+- **screening-launcher** skill — replaced entirely by screen.sh
+
 ## [4.3.2] - 2026-01-29
 
 ### Fixed

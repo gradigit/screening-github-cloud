@@ -4,6 +4,51 @@ Deep security screening for GitHub repos in disposable sandbox environments. **C
 
 This is an [Agent Skill](https://agentskills.io) - a portable set of instructions that any compatible AI coding agent can discover and use. Agent Skills follow an [open standard](https://github.com/agentskills/agentskills) supported by Claude Code, GitHub Copilot, Cursor, OpenAI Codex, Gemini CLI, and others.
 
+## One-Command Screening
+
+The fastest way to screen a repo. One command handles everything: Codespace creation, tool installation, and screening.
+
+```bash
+# Download and run
+curl -sO https://raw.githubusercontent.com/gradigit/screening-github-cloud/main/screen.sh
+chmod +x screen.sh
+./screen.sh https://github.com/suspicious/repo
+```
+
+**First run:** Creates Codespace, installs tools, opens interactive SSH. You run `claude login` then `claude --dangerously-skip-permissions "screen <url>"`.
+
+**Subsequent runs:** Reuses Codespace, auto-starts screening (no interaction needed).
+
+**Delete after screening:** `./screen.sh https://github.com/suspicious/repo --destroy`
+
+**Force fresh Codespace:** `./screen.sh https://github.com/suspicious/repo --fresh`
+
+See [Reuse vs Destroy](#reuse-vs-destroy-security-tradeoffs) for when to use each mode.
+
+---
+
+## Reuse vs Destroy: Security Tradeoffs
+
+### REUSE (default)
+
+- Codespace **stops** after screening, restarts on next run
+- Tools + Claude login persist — fast subsequent screenings
+- **Risk:** a malicious repo could leave artifacts that affect the next screening
+- **Best for:** routine screenings of repos you expect are probably safe
+
+### DESTROY (`--destroy` flag)
+
+- Codespace **deleted** after screening — nothing persists
+- Next run: full reinstall + Claude re-login required
+- **Risk:** none — completely fresh environment every time
+- **Best for:** high-risk targets you suspect are genuinely malicious
+
+### Recommendation
+
+Use default (reuse) for most screenings. Use `--destroy` when screening repos that look suspicious from the start. Use `--fresh` when you want a clean slate without deleting the old Codespace.
+
+---
+
 ## Installation & Usage
 
 This skill runs inside a **disposable sandbox**. Do not install on your local machine.
@@ -132,6 +177,7 @@ The skill runs in a fresh, disposable environment with nothing valuable. It can 
 
 ```
 screening-github-cloud/
+├── screen.sh       # One-command screening launcher
 ├── SKILL.md        # Core skill instructions (for agents)
 ├── heuristics.md   # Detection patterns
 ├── examples.md     # Screening walkthroughs
