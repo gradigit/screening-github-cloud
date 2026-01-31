@@ -156,7 +156,14 @@ mv ~/SCREENING-REPORT.md "reports/${DATE}-${OWNER_REPO}.md"
 git add reports/
 git commit -m "screening: ${OWNER_REPO} ${DATE}"
 git push
+
+# Get the repo remote URL and construct the report link
+REPO_SLUG=$(git remote get-url origin | sed 's|.*github.com[:/]||;s|\.git$||')
+echo ""
+echo "Report: https://github.com/${REPO_SLUG}/blob/main/reports/${DATE}-${OWNER_REPO}.md"
 ```
+
+**After pushing, always output the full GitHub URL to the report.** This lets the user click directly to view it.
 
 Reports are then browsable in the repo's `reports/` directory on GitHub.
 

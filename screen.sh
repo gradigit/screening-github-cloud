@@ -169,6 +169,25 @@ echo ""
 
 gh codespace ssh -c "$CODESPACE_NAME"
 
+# --- Show Report Link ---
+
+# Extract owner/repo from target URL → expected report filename
+TARGET_PATH="${TARGET_URL#https://github.com/}"
+TARGET_PATH="${TARGET_PATH%.git}"
+OWNER_REPO=$(echo "$TARGET_PATH" | tr '/' '-')
+TODAY=$(date +%Y-%m-%d)
+REPORT_FILE="reports/${TODAY}-${OWNER_REPO}.md"
+
+REPORT_URL="https://github.com/$GH_USER/$REPO_NAME/blob/main/$REPORT_FILE"
+
+# Check if report was actually pushed
+if gh api "repos/$GH_USER/$REPO_NAME/contents/$REPORT_FILE" >/dev/null 2>&1; then
+  echo ""
+  echo "========================================"
+  echo "  Report: $REPORT_URL"
+  echo "========================================"
+fi
+
 # --- Stop or Destroy ---
 
 if [[ "$DESTROY" == true ]]; then
