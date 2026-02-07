@@ -127,7 +127,9 @@ npm install -g @anthropic-ai/claude-code
 
 # Screening skill
 mkdir -p ~/.claude/skills
-if [ ! -d ~/.claude/skills/screening-github-cloud ]; then
+if [ -d ~/.claude/skills/screening-github-cloud/.git ]; then
+  git -C ~/.claude/skills/screening-github-cloud pull --ff-only
+else
   git clone https://github.com/gradigit/screening-github-cloud ~/.claude/skills/screening-github-cloud
 fi
 
