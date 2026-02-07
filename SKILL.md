@@ -3,9 +3,9 @@ name: screening-github-cloud
 description: Pre-clone security screening for GitHub repositories in sandboxed environments. Supports GitHub Codespaces (cloud) and Docker/OrbStack (local sandbox). Activates when user asks to "screen repo", "is this repo safe", "check before cloning", or mentions security screening.
 license: MIT
 metadata:
-  version: "5.0.0"
+  version: "5.1.0"
   author: gradigit
-  updated: "2026-01-31"
+  updated: "2026-02-07"
   environment: codespaces, docker, orbstack
   tags:
     - security
@@ -163,7 +163,17 @@ echo ""
 echo "Report: https://github.com/${REPO_SLUG}/blob/main/reports/${DATE}-${OWNER_REPO}.md"
 ```
 
-**After pushing, always output the full GitHub URL to the report.** This lets the user click directly to view it.
+**After pushing, always output the full GitHub URL to the report.** This lets the user Cmd+click directly to view it in their terminal.
+
+**CRITICAL: The very last thing you output after the entire screening is complete MUST be the full report URL on its own line, with no backticks, quotes, or markdown formatting around it.** This is required so it is Cmd+clickable in the terminal. Example:
+
+```
+Report saved and pushed.
+
+https://github.com/gradigit/screening-reports/blob/main/reports/2026-02-01-facebook-react.md
+```
+
+Do NOT wrap the URL in backticks or markdown links. Do NOT put a period after it. Output it as a bare URL on its own line as the final output of the screening session.
 
 Reports are then browsable in the repo's `reports/` directory on GitHub.
 
@@ -188,7 +198,8 @@ Reports are then browsable in the repo's `reports/` directory on GitHub.
 11. **Deep dive suspicious dependencies** (install, inspect, compare)
 12. Generate screening report
 13. Save report to Codespace's repo (see Saving Reports section)
-14. Destroy sandbox
+14. **Output the full GitHub URL to the report as the final line** (bare URL, no formatting — must be Cmd+clickable)
+15. Destroy sandbox
 
 Mark each task `in_progress` when starting, `completed` when done.
 

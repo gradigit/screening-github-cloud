@@ -2,6 +2,17 @@
 
 All notable changes to this skill are documented here.
 
+## [5.1.0] - 2026-02-07
+
+### Added
+- Explicit step 14 in workflow: output full GitHub report URL as final screening output
+- CRITICAL instruction: report URL must be bare (no backticks, quotes, or markdown) and on its own line for Cmd+click support in terminals like Ghostty
+
+### Changed
+- Workflow now has 15 steps (was 14)
+- "Saving Reports" section expanded with formatting requirements for clickable URLs
+- Version bump to 5.1.0
+
 ## [5.0.0] - 2026-01-31
 
 ### Added
