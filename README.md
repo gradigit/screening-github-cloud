@@ -154,7 +154,7 @@ The skill handles everything after installation, including installing security t
 | Phase | Actions |
 |-------|---------|
 | **Static Analysis** | Scan for malicious patterns, secrets, obfuscation |
-| **Tool Scanning** | Run Trivy (CVEs, secrets), Gitleaks, actionlint, zizmor |
+| **Tool Scanning** | Run Trivy (CVEs, secrets), Gitleaks, Semgrep (code patterns), actionlint, zizmor |
 | **Dynamic Analysis** | Execute `npm install`, observe behavior |
 | **Dependency Audit** | Run `npm audit` / `pip-audit` |
 | **Deep Dependency Investigation** | Install and inspect suspicious dependencies in isolation |

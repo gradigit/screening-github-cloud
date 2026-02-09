@@ -246,6 +246,33 @@ on:
   workflow_run:         # Check what triggers it
 ```
 
+**Workflow Run with PR checkout (CWE-913):**
+
+Like `pull_request_target`, `workflow_run` runs with write access. Checking out PR code is dangerous:
+
+```yaml
+# UNSAFE - runs PR code with repo secrets
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+steps:
+  - uses: actions/checkout@v2
+    with:
+      ref: ${{ github.event.workflow_run.head.sha }}
+  - run: npm install  # Executes attacker code with secrets access
+```
+
+```yaml
+# SAFE - no checkout of untrusted code
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+steps:
+  - run: echo "Safe operation without PR code checkout"
+```
+
 ### Script Injection
 
 **UNSAFE - user input in run:**
@@ -509,3 +536,32 @@ zizmor .github/workflows/
 - Script injection warnings
 - Unpinned action refs
 - Dangerous triggers (pull_request_target)
+
+### Semgrep Output
+
+```bash
+semgrep --config p/security-audit --config p/owasp-top-ten --no-git-ignore . 2>/dev/null
+```
+
+**Severity mapping:**
+
+| Semgrep Level | Screening Severity |
+|---------------|-------------------|
+| ERROR | HIGH-CRITICAL |
+| WARNING | MEDIUM |
+| INFO | LOW |
+
+**Look for:**
+- ERROR findings: injection, eval/exec with user input, hardcoded credentials
+- Taint-mode results: data flow from untrusted source to dangerous sink
+- Code injection: eval/exec/Function with non-static arguments
+
+**Useful rulesets for screening:**
+
+| Ruleset | Focus |
+|---------|-------|
+| `p/security-audit` | Comprehensive security rules across languages |
+| `p/owasp-top-ten` | OWASP Top 10 vulnerability patterns |
+| `p/cwe-top-25` | CWE Top 25 (optional, for deeper scans) |
+
+**Fallback if Semgrep unavailable:** Use manual grep patterns from the Malicious Code and Injection Vulnerabilities sections above.

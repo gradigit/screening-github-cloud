@@ -2,6 +2,26 @@
 
 All notable changes to this skill are documented here.
 
+## [5.2.0] - 2026-02-09
+
+### Added
+- **Semgrep** static analysis as 5th scanning tool
+  - Detects injection vulnerabilities, eval/exec misuse, hardcoded secrets in code context
+  - Uses `p/security-audit` and `p/owasp-top-ten` rulesets
+  - `--no-git-ignore` flag ensures gitignored files are scanned (malicious code can hide there)
+  - Fills gap between Trivy (dependency CVEs) and manual grep (simple patterns)
+- Semgrep install, run commands, and output parsing guidance
+- Semgrep section in report template and all examples
+- Semgrep severity mapping (ERROR → HIGH-CRITICAL, WARNING → MEDIUM, INFO → LOW)
+- `workflow_run` checkout vulnerability pattern in heuristics.md (CWE-913, from Semgrep code-security rules)
+- Semgrep fallback patterns for when tool is unavailable
+
+### Changed
+- Workflow step 5 now includes Semgrep alongside Trivy and Gitleaks
+- Tool Versions table includes Semgrep 1.x
+- All example and template version references updated to v5.2.0
+- Version bump to 5.2.0
+
 ## [5.1.0] - 2026-02-07
 
 ### Added

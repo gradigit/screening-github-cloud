@@ -59,6 +59,14 @@ Files:       47
 No leaks found
 ```
 
+**Semgrep:**
+```
+$ semgrep --config p/security-audit --config p/owasp-top-ten --no-git-ignore .
+
+Ran 350+ rules on 47 files.
+No findings.
+```
+
 ### Dynamic Analysis
 
 ```bash
@@ -114,6 +122,9 @@ No vulnerabilities, secrets, or misconfigurations.
 ### Gitleaks
 No secrets found in repository or git history.
 
+### Semgrep
+No findings across 350+ security rules.
+
 ### npm audit
 0 vulnerabilities
 
@@ -126,7 +137,7 @@ no unexpected network activity, no files created outside project.
 Safe to clone to your local machine.
 
 ---
-*Sandboxed screening via screening-github-cloud v5.0.0*
+*Sandboxed screening via screening-github-cloud v5.2.0*
 ```
 
 ---
@@ -194,6 +205,29 @@ HIGH: Hardcoded credential detected
   Line 45: const key = "AKIA..."
 ```
 
+**Semgrep:**
+```
+$ semgrep --config p/security-audit --config p/owasp-top-ten --no-git-ignore .
+
+┌──────────────────────────────────────────────────────────────┐
+│ 2 Code Findings                                              │
+└──────────────────────────────────────────────────────────────┘
+
+  setup.js
+  ❯❯❱ javascript.lang.security.detect-eval-with-expression
+          eval() with non-literal argument detected.
+
+          3┆ const _0x4a2b=['hostname','userInfo','username','env'];
+           ⋮┆
+          12┆ eval(_0x4a2b.join(''))
+
+  setup.js
+  ❯❯❱ javascript.lang.security.detect-non-literal-require
+          Non-literal argument in require() detected.
+
+          18┆ const mod = require(_0x4a2b[2])
+```
+
 ### Report Output
 
 ```markdown
@@ -245,6 +279,9 @@ HIGH: Hardcoded credential detected
 ### Gitleaks
 1 secret detected (AWS key pattern)
 
+### Semgrep
+2 ERROR: eval with non-literal argument, dynamic require in setup.js
+
 ### Dynamic Analysis
 - POST to external server observed
 - Background process spawned
@@ -257,7 +294,7 @@ HIGH: Hardcoded credential detected
 3. Report to npm security team
 
 ---
-*Sandboxed screening via screening-github-cloud v5.0.0*
+*Sandboxed screening via screening-github-cloud v5.2.0*
 ```
 
 ---
@@ -346,7 +383,7 @@ No issues found.
 `npm install` completed normally, no suspicious behavior.
 
 ---
-*Sandboxed screening via screening-github-cloud v5.0.0*
+*Sandboxed screening via screening-github-cloud v5.2.0*
 ```
 
 ---
@@ -398,6 +435,9 @@ comment-handler.yml
   MEDIUM: unpinned-action at line 10
     actions/checkout@main is not pinned to a commit SHA
 ```
+
+**Semgrep** (optional for Actions-only repos):
+Semgrep also detects Actions vulnerabilities but actionlint + zizmor provide better coverage for workflow-specific issues.
 
 ### Report Output
 
@@ -454,7 +494,7 @@ None in application code.
 Application code: `npm install` normal, no issues.
 
 ---
-*Sandboxed screening via screening-github-cloud v5.0.0*
+*Sandboxed screening via screening-github-cloud v5.2.0*
 ```
 
 ---
@@ -559,7 +599,7 @@ None.
 3. Check if this was intentional or a typo
 
 ---
-*Sandboxed screening via screening-github-cloud v5.0.0*
+*Sandboxed screening via screening-github-cloud v5.2.0*
 ```
 
 ---
@@ -602,6 +642,21 @@ grep -r "pull_request_target" .github/workflows/
 grep -r '\${{.*github\.event' .github/workflows/
 grep -rE "uses:.*@(main|master|v[0-9]+)$" .github/workflows/
 ```
+
+### Semgrep Unavailable
+
+If Semgrep fails to install (Python not available, network issues):
+
+```bash
+# Fall back to manual pattern matching for injection/eval
+grep -rE "eval\s*\(" ./target-repo --include="*.js" --include="*.py"
+grep -rE "exec\s*\(" ./target-repo --include="*.js" --include="*.py"
+grep -rE "Function\s*\(" ./target-repo --include="*.js"
+grep -rE "subprocess\.(call|run|Popen).*shell\s*=\s*True" ./target-repo --include="*.py"
+grep -rE "__import__\s*\(" ./target-repo --include="*.py"
+```
+
+These catch the most critical patterns. Taint-mode analysis (tracking data flow from user input to dangerous sinks) is unavailable without Semgrep.
 
 ### Dynamic Analysis Still Works
 
@@ -673,7 +728,7 @@ Normal behavior observed during npm install.
 2. Or manually review postinstall scripts before running npm install locally
 
 ---
-*Sandboxed screening via screening-github-cloud v5.0.0*
+*Sandboxed screening via screening-github-cloud v5.2.0*
 *Note: Reduced confidence due to tool installation failures.*
 ```
 
@@ -720,6 +775,9 @@ Use this structure for all screenings:
 ### actionlint / zizmor
 [Actions issues or "N/A"]
 
+### Semgrep
+[Code-level security findings or "None"]
+
 ### npm audit / pip-audit
 [Vulnerabilities or "None"]
 
@@ -731,6 +789,6 @@ Use this structure for all screenings:
 [What to do based on verdict]
 
 ---
-*Sandboxed screening via screening-github-cloud v5.0.0*
+*Sandboxed screening via screening-github-cloud v5.2.0*
 *Dynamic analysis performed in disposable environment.*
 ```
