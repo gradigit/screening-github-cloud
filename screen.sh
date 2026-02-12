@@ -79,11 +79,22 @@ done
 # --- Check Prerequisites ---
 
 command -v gh >/dev/null 2>&1 || die "GitHub CLI (gh) not found. Install: https://cli.github.com"
+
+# --- Switch to personal account (gradigit) ---
+
+GH_ACCOUNT="gradigit"
+CURRENT_USER=$(gh api user --jq .login 2>/dev/null || echo "")
+
+if [[ "$CURRENT_USER" != "$GH_ACCOUNT" ]]; then
+  echo "Switching GitHub account to $GH_ACCOUNT..."
+  gh auth switch --user "$GH_ACCOUNT" 2>/dev/null || die "Failed to switch to $GH_ACCOUNT. Run: gh auth login"
+fi
+
 gh auth status >/dev/null 2>&1 || die "Not logged in to GitHub CLI. Run: gh auth login"
 
 # --- Get GitHub Username + Ensure Reports Repo ---
 
-GH_USER=$(gh api user --jq .login) || die "Failed to get GitHub username"
+GH_USER="$GH_ACCOUNT"
 
 gh repo view "$GH_USER/$REPO_NAME" >/dev/null 2>&1 || {
   echo "Creating private repo: $GH_USER/$REPO_NAME"
@@ -111,8 +122,8 @@ else
 fi
 
 # --- Idempotent Provisioning ---
-# Only installs Claude Code CLI + screening skill.
-# Security tools (Trivy, Gitleaks, etc.) are installed by the skill itself during screening.
+# Only installs Claude Code CLI on first run.
+# Screening skill is always updated (pull latest) on every run.
 
 echo "Checking provisioning status..."
 INSTALLED=$(gh codespace ssh -c "$CODESPACE_NAME" -- "test -f ~/$MARKER && echo yes || echo no" 2>/dev/null || echo "no")
@@ -127,11 +138,7 @@ npm install -g @anthropic-ai/claude-code
 
 # Screening skill
 mkdir -p ~/.claude/skills
-if [ -d ~/.claude/skills/screening-github-cloud/.git ]; then
-  git -C ~/.claude/skills/screening-github-cloud pull --ff-only
-else
-  git clone https://github.com/gradigit/screening-github-cloud ~/.claude/skills/screening-github-cloud
-fi
+git clone https://github.com/gradigit/screening-github-cloud ~/.claude/skills/screening-github-cloud
 
 # Alias claude to skip permissions (sandbox is the protection)
 grep -q 'alias claude=' ~/.bashrc 2>/dev/null || {
@@ -148,7 +155,18 @@ echo "========================================"
 PROVISION
   echo "Provisioning complete."
 else
-  echo "Already provisioned."
+  echo "Already provisioned. Updating screening skill..."
+  gh codespace ssh -c "$CODESPACE_NAME" -- 'bash -s' <<'UPDATE'
+set -e
+if [ -d ~/.claude/skills/screening-github-cloud/.git ]; then
+  git -C ~/.claude/skills/screening-github-cloud pull --ff-only
+  echo "Skill updated."
+else
+  mkdir -p ~/.claude/skills
+  git clone https://github.com/gradigit/screening-github-cloud ~/.claude/skills/screening-github-cloud
+  echo "Skill installed."
+fi
+UPDATE
 fi
 
 # --- Open Interactive SSH ---
